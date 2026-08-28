@@ -69,21 +69,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 #countdown{position:fixed;inset:0;z-index:56;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#180000 0%,#000 70%)}
 #bigCount{font-size:8rem;font-weight:900;color:#ff1e3c;text-shadow:0 0 60px rgba(255,30,60,.9)}
 @media(max-width:420px){.vrr-logo{font-size:2.1rem}.big-btn{height:60px;font-size:1.1rem}}
-#quarterStatsScreen{
-  display:none;position:fixed;inset:0;z-index:300;
-  background:radial-gradient(ellipse at center,#12060a 0%,#000 70%);
-  flex-direction:column;align-items:center;justify-content:center;padding:24px;
-}
-.qs-title{font-size:1.7rem;font-weight:900;font-style:italic;letter-spacing:.03em;text-transform:uppercase;text-shadow:0 0 30px rgba(255,30,60,.6);margin-bottom:24px;text-align:center;color:#fff}
-.qs-board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;max-width:480px;margin-bottom:20px}
-.qs-cell{border-radius:12px;border:2px solid rgba(255,30,60,.35);background:rgba(255,30,60,.06);padding:12px 4px;text-align:center}
-.qs-cell.qs-current{border-color:#ff1e3c;background:rgba(255,30,60,.18);box-shadow:0 0 24px rgba(255,30,60,.5)}
-.qs-label{font-size:.56rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#ffb3ba;margin-bottom:4px;line-height:1.25}
-.qs-val{font-size:1.4rem;font-weight:900;color:#fff}
-.qs-total{font-size:1.1rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#ffb3ba;margin-bottom:26px}
-.qs-total span{font-size:1.6rem;color:#fff;margin-left:8px}
-.qs-next-btn{width:100%;max-width:420px;height:64px;border:none;border-radius:20px;background:linear-gradient(135deg,#ff1e3c,#ff6b35);color:#fff;font-size:1.05rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 40px rgba(255,30,60,.7)}
-.qs-next-btn:active{transform:scale(.98)}
 
 /* Standings — in-page board, ported from the working pattern already
    live on Shoot It. Own It. and Make It Count. This game only ever
@@ -111,18 +96,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 </style>
 </head>
 <body>
-<div id="quarterStatsScreen">
-  <div class="qs-title" id="qsTitle">1 REACTIFIC COMPLETE!</div>
-  <div class="qs-board">
-    <div class="qs-cell" id="qsCell1"><div class="qs-label">1 Reactific</div><div class="qs-val" id="qsQ1">0</div></div>
-    <div class="qs-cell" id="qsCell2"><div class="qs-label">2 Reaction Speed</div><div class="qs-val" id="qsQ2">0</div></div>
-    <div class="qs-cell" id="qsCell3"><div class="qs-label">3 Shoot It. Own It.</div><div class="qs-val" id="qsQ3">0</div></div>
-    <div class="qs-cell" id="qsCell4"><div class="qs-label">4 Make It Count.</div><div class="qs-val" id="qsQ4">0</div></div>
-  </div>
-  <div class="qs-total">Final Score: <span id="qsTotal">0</span></div>
-  <button class="qs-next-btn" id="qsNextBtn">NEXT: 2 REACTION SPEED →</button>
-</div>
-
 <div id="space">
   <canvas id="stars"></canvas>
   <div id="edge-glow"></div>
@@ -437,44 +410,6 @@ function handleTap(){
 
 function initAudio(){}
 
-var THIS_QUARTER=2;
-var QUARTER_SEQUENCE=[
-  {n:1,label:'1 Reactific',file:'vr-reactific.html'},
-  {n:2,label:'2 Reaction Speed',file:'vr-reaction-speed.html'},
-  {n:3,label:'3 Shoot It. Own It.',file:'vr-shoot-it-own-it.html'},
-  {n:4,label:'4 Make It Count.',file:'vr-make-it-count.html'}
-];
-function isFullGameActive(){return sessionStorage.getItem('hoop-fullgame-active')==='1'}
-function loadQuarterScores(){
-  try{return JSON.parse(sessionStorage.getItem('hoop-quarter-scores')||'{"q1":0,"q2":0,"q3":0,"q4":0}')}
-  catch(e){return {q1:0,q2:0,q3:0,q4:0}}
-}
-function showQuarterStats(finalScore){
-  var scores=loadQuarterScores();
-  scores['q'+THIS_QUARTER]=finalScore;
-  sessionStorage.setItem('hoop-quarter-scores',JSON.stringify(scores));
-  var total=scores.q1+scores.q2+scores.q3+scores.q4;
-
-  document.getElementById('qsTitle').textContent=QUARTER_SEQUENCE[THIS_QUARTER-1].label.toUpperCase()+' COMPLETE!';
-  document.getElementById('qsQ1').textContent=scores.q1;
-  document.getElementById('qsQ2').textContent=scores.q2;
-  document.getElementById('qsQ3').textContent=scores.q3;
-  document.getElementById('qsQ4').textContent=scores.q4;
-  document.getElementById('qsTotal').textContent=total;
-  for(var i=1;i<=4;i++)document.getElementById('qsCell'+i).classList.toggle('qs-current',i===THIS_QUARTER);
-
-  var nextBtn=document.getElementById('qsNextBtn');
-  if(THIS_QUARTER<4){
-    var nextQ=QUARTER_SEQUENCE[THIS_QUARTER];
-    nextBtn.textContent='NEXT: '+nextQ.label.toUpperCase()+' →';
-    nextBtn.onclick=function(){window.location.href=nextQ.file};
-    document.getElementById('quarterStatsScreen').style.display='flex';
-  }else{
-    sessionStorage.setItem('hoop-fullgame-active','0');
-    window.location.href='reaction-velocity-final-score.html';
-  }
-}
-
 function endDrill(){
   if(phase==='done')return;
   phase='done';clrT();targetEl.classList.remove('visible');
@@ -484,37 +419,13 @@ function endDrill(){
   var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
   if(isNewPts){best=finalScore;saveBest()}
   if(isNewMs){bestAvgMs=avgRT;saveBestMs()}
-  // Individual-game standings only ever mean something for genuine
-  // solo play. During a tracked Full Game run, this quarter's score
-  // already goes to the combined board once, at the final score page
-  // — writing it here too would double-post the same result onto a
-  // table meant only for standalone runs.
-  if(!isFullGameActive())recordScoreToStandings(currentPlayerName,finalScore,avgRT);
+  recordScoreToStandings(currentPlayerName,finalScore,avgRT);
 
   $('endNum').textContent=finalScore;
-
-  if(isFullGameActive()){
-    showQuarterStats(finalScore);
-  }else{
-    $('screen-end').style.display='flex';
-  }
+  $('screen-end').style.display='flex';
 }
 
 loadBest();
-
-// A tracked Full Game run should drop straight into gameplay — the
-// name was already captured once at the hub, asking again mid-run is
-// just friction. Standalone play (opening this game on its own) now
-// genuinely shows the intro screen instead, so a real name gets
-// typed before every solo game — this game's own standings only mean
-// something if scores are actually attributed to real players, not
-// every solo run landing on the board as "Player".
-if(isFullGameActive()){
-  var storedName=sessionStorage.getItem('hoop-player-name');
-  currentPlayerName=storedName||'Player';
-  $('playerNameInputMain').value=currentPlayerName;
-  startDrill();
-}
 </script>
 </body>
 </html>
