@@ -102,6 +102,33 @@ body{
 .action-btn.secondary{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.25)}
 
 footer{margin-top:16px;font-size:.68rem;color:#6b5d52;letter-spacing:.02em}
+
+/* Standings — in-page board, ported from the working dropdown
+   pattern, now living here instead of a separate external page. */
+#screen-box{display:none;position:fixed;inset:0;z-index:200;flex-direction:column;align-items:center;background:radial-gradient(ellipse at center,#12060a 0%,#000 70%);padding:20px 16px 24px;overflow-y:auto}
+.box-back-btn{align-self:flex-start;padding:8px 16px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;cursor:pointer;margin-bottom:20px}
+.box-empty{color:#8892a0;font-size:.85rem;padding:24px 8px;font-style:italic;text-align:center}
+.standings-row-header,.standings-row-main{display:grid;grid-template-columns:28px 1fr 60px 22px;gap:8px;align-items:center;padding:12px 10px;border-radius:10px;width:100%;max-width:520px}
+.standings-row-header{font-size:.58rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#8892a0;padding:0 10px 8px}
+.standings-row{width:100%;max-width:520px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:6px;overflow:hidden;cursor:pointer}
+.standings-row.rank-1{border-color:rgba(255,211,90,.5);background:rgba(255,211,90,.08)}
+.standings-row.rank-2{border-color:rgba(200,200,220,.4);background:rgba(200,200,220,.06)}
+.standings-row.rank-3{border-color:rgba(255,140,66,.4);background:rgba(255,140,66,.06)}
+.sr-rank{font-weight:900;color:#ff1e3c}
+.standings-row.rank-1 .sr-rank{color:#ffd35a}
+.sr-name{text-align:left;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-total{font-weight:900;color:#fff;font-size:1rem;text-align:right}
+.sr-chevron{color:#7c8699;font-size:.7rem;transition:transform .18s;text-align:center}
+.standings-row.open .sr-chevron{transform:rotate(180deg)}
+.standings-detail{max-height:0;overflow:hidden;transition:max-height .2s ease}
+.standings-row.open .standings-detail{max-height:170px}
+.standings-detail-inner{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0 8px 10px}
+.sd-cell{text-align:center;padding:8px 2px;border-radius:8px;background:rgba(255,255,255,.04)}
+.sd-label{font-size:.52rem;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#8892a0;margin-bottom:3px;line-height:1.15}
+.sd-val{font-size:.95rem;font-weight:900;color:#fff}
+.sd-final{text-align:center;padding:0 12px 14px;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#8892a0}
+.sd-final b{color:#fff;font-size:1rem;margin-left:6px}
+.standings-wrap{width:100%;display:flex;flex-direction:column;align-items:center}
 </style>
 </head>
 <body>
@@ -125,9 +152,23 @@ footer{margin-top:16px;font-size:.68rem;color:#6b5d52;letter-spacing:.02em}
     <div id="standingsStatus" style="font-size:.78rem;font-weight:700;letter-spacing:.04em;color:#8892a0;margin:-10px 0 20px">Saving to standings…</div>
 
     <button class="action-btn primary" id="playAgainBtn">🏀 PLAY AGAIN</button>
+    <button class="action-btn secondary" id="viewStandingsBtn">🏆 THE STANDINGS</button>
     <a class="action-btn secondary" href="reaction-velocity.html">← Back to the Arena</a>
 
     <footer>Gostar Digital LLC</footer>
+  </div>
+</div>
+
+<!-- THE STANDINGS -->
+<div id="screen-box">
+  <button class="box-back-btn" id="closeBoxBtn">← Back</button>
+  <div class="final-title" style="margin-bottom:2px">THE <span>STANDINGS</span></div>
+  <div style="font-size:.72rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:#ffb38a;margin-bottom:20px">Reaction Velocity · Best Final Score Per Player</div>
+  <div class="standings-wrap">
+    <div class="standings-row-header">
+      <span></span><span style="text-align:left">Player</span><span style="text-align:right">Final</span><span></span>
+    </div>
+    <div id="standingsList" style="width:100%;display:flex;flex-direction:column;align-items:center"></div>
   </div>
 </div>
 
@@ -149,6 +190,71 @@ document.getElementById('playAgainBtn').addEventListener('click',function(){
   sessionStorage.setItem('hoop-fullgame-active','1');
   sessionStorage.setItem('hoop-quarter-scores',JSON.stringify({q1:0,q2:0,q3:0,q4:0}));
   window.location.href='vr-reactific.html';
+});
+
+// ══════════════════════════════════════════════════════
+//  STANDINGS VIEW — in-page now, matching the pattern each individual
+//  quarter game already uses, rather than linking out to a separate
+//  page. Reads the same combined table every run's total gets saved
+//  to below, with each player's row expanding to show their own
+//  per-quarter breakdown.
+// ══════════════════════════════════════════════════════
+function fetchFullGameStandings(){
+  var url=SUPABASE_URL+'/rest/v1/'+SB_TABLE+'?select=player_name,q1_score,q2_score,q3_score,q4_score,total_score&order=total_score.desc';
+  return fetch(url,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY}})
+    .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
+    .then(function(rows){
+      var best={};
+      (rows||[]).forEach(function(r){
+        var existing=best[r.player_name];
+        if(!existing||r.total_score>existing.total){
+          best[r.player_name]={name:r.player_name,q1:r.q1_score,q2:r.q2_score,q3:r.q3_score,q4:r.q4_score,total:r.total_score};
+        }
+      });
+      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.total-a.total});
+    });
+}
+function renderFullGameStandings(){
+  var listEl=document.getElementById('standingsList');
+  listEl.innerHTML='<div class="box-empty">Loading standings…</div>';
+  fetchFullGameStandings().then(function(ranked){
+    if(!ranked.length){
+      listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
+      return;
+    }
+    listEl.innerHTML=ranked.map(function(p,i){
+      var rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+      var safeName=p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return '<div class="standings-row '+rankClass+'">'
+        +'<div class="standings-row-main">'
+          +'<span class="sr-rank">'+(i+1)+'</span>'
+          +'<span class="sr-name">'+safeName+'</span>'
+          +'<span class="sr-total">'+p.total+'</span>'
+          +'<span class="sr-chevron">▼</span>'
+        +'</div>'
+        +'<div class="standings-detail"><div class="standings-detail-inner">'
+          +'<div class="sd-cell"><div class="sd-label">1 Reactific</div><div class="sd-val">'+p.q1+'</div></div>'
+          +'<div class="sd-cell"><div class="sd-label">2 Reaction Speed</div><div class="sd-val">'+p.q2+'</div></div>'
+          +'<div class="sd-cell"><div class="sd-label">3 Shoot It.</div><div class="sd-val">'+p.q3+'</div></div>'
+          +'<div class="sd-cell"><div class="sd-label">4 Make It Count.</div><div class="sd-val">'+p.q4+'</div></div>'
+        +'</div><div class="sd-final">Final Score<b>'+p.total+'</b></div></div>'
+        +'</div>';
+    }).join('');
+    listEl.querySelectorAll('.standings-row').forEach(function(row){
+      row.addEventListener('click',function(){ row.classList.toggle('open'); });
+    });
+  }).catch(function(){
+    listEl.innerHTML='<div class="box-empty">Couldn\'t load standings right now — try again in a moment.</div>';
+  });
+}
+document.getElementById('viewStandingsBtn').addEventListener('click',function(){
+  renderFullGameStandings();
+  document.getElementById('stage').style.display='none';
+  document.getElementById('screen-box').style.display='flex';
+});
+document.getElementById('closeBoxBtn').addEventListener('click',function(){
+  document.getElementById('screen-box').style.display='none';
+  document.getElementById('stage').style.display='flex';
 });
 
 // ══════════════════════════════════════════════════════
