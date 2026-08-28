@@ -162,6 +162,9 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 .box-recent-row:last-child{border-bottom:none}
 .box-recent-row b{color:#ffd35a}
 .box-open-btn{width:100%;max-width:420px;height:52px;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.1);border-radius:14px;color:#00e5ff;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:6px}
+.standings-tab-row{display:flex;gap:6px;width:100%;max-width:600px;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.standings-tab{padding:8px 14px;border-radius:999px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:#9fb3c8;font-size:.68rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.standings-tab.active{border-color:#FF6B35;color:#FF6B35;background:rgba(255,107,53,.1)}
 
 /* Game switcher — every game's start screen carries the same 4-slot
    row, so any game (and its own standings, one tap further in) is
@@ -253,7 +256,8 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 <div id="screen-box">
   <button class="box-back-btn" id="closeBoxBtn" style="margin-top:0;margin-bottom:20px">← Back</button>
   <div class="box-title">THE <span>STANDINGS</span></div>
-  <div class="box-sub">Shoot It. Own It. · Player vs. Player</div>
+  <div class="box-sub" id="boxSub">Shoot It. Own It. · Player vs. Player</div>
+  <div class="standings-tab-row" id="standingsTabRow"></div>
 
   <div style="width:100%;max-width:600px">
     <div class="box-section">
@@ -401,30 +405,23 @@ function recordScoreToStandings(name,finalScore,made,attempts,avgMs,shots){
   }).catch(function(){}); // offline is fine — this game's own end screen already shows the score either way
 }
 
-// Fetches every game ever recorded, then keeps only each player's own
-// best — the same "best score per player" logic the local-only
-// version always used, just built from shared data now instead of
-// one device's own storage.
-function fetchStandings(){
-  var url=SB_URL+'/rest/v1/'+SB_TABLE+'?select=player_name,score,made,attempts,avg_ms,shots&order=score.desc';
-  return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
-    .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
-    .then(function(rows){
-      var best={};
-      (rows||[]).forEach(function(r){
-        var existing=best[r.player_name];
-        if(!existing||r.score>existing.pts){
-          best[r.player_name]={name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]};
-        }
-      });
-      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.pts-a.pts});
-    });
-}
-
-// The board is now only cleared from admin.html, behind a real
-// login — never from a button any player could reach on a shared
-// classroom device.
-
+// ══════════════════════════════════════════════════════
+//  STANDINGS — every game's own board, one tap away from any other.
+//  Two data shapes exist across the four games: Reactific and
+//  Reaction Speed only ever save a score + average reaction time;
+//  Shoot It. Own It. and Make It Count. also save a full shot-by-shot
+//  log, rendered as an expandable per-player detail. This file (and
+//  each of the other three) carries the fetch/render logic for all
+//  four, so switching tabs never leaves the page.
+// ══════════════════════════════════════════════════════
+var STANDINGS_GAMES=[
+  {key:'reactific',label:'Reactific',table:'vr_reactific_standings',rich:false},
+  {key:'reaction-speed',label:'Reaction Speed',table:'vr_reaction_speed_standings',rich:false},
+  {key:'shoot-it',label:'Shoot It.',table:'vr_shoot_it_own_it_standings',rich:true},
+  {key:'make-it-count',label:'Make It Count.',table:'vr_make_it_count_standings',rich:true}
+];
+var THIS_GAME_KEY='shoot-it';
+var currentStandingsGame=THIS_GAME_KEY;
 
 // Renders one game's full tap-by-tap history into a container — a
 // real, ordered record of every hit and miss with its own BPM and
@@ -445,21 +442,53 @@ function renderTapLog(container,shots,finalScore){
   container.innerHTML=chips+'<div class="tap-log-total">Final Total: <b>'+finalScore+' PTS</b></div>';
 }
 
-function renderStandings(){
-  // The ranked board is shared across every device, so it genuinely
-  // has to wait on a real fetch. Show that honestly rather than
-  // pretending it's instant.
+function fetchStandingsFor(gameConfig){
+  var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms';
+  var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc';
+  return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
+    .then(function(rows){
+      var best={};
+      (rows||[]).forEach(function(r){
+        var existing=best[r.player_name];
+        if(!existing||r.score>existing.pts){
+          best[r.player_name]=gameConfig.rich
+            ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]}
+            :{name:r.player_name,pts:r.score,ms:r.avg_ms};
+        }
+      });
+      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.pts-a.pts});
+    });
+}
+
+function renderStandingsTabs(){
+  var row=$('standingsTabRow');
+  row.innerHTML=STANDINGS_GAMES.map(function(g){
+    return '<button class="standings-tab'+(g.key===currentStandingsGame?' active':'')+'" data-key="'+g.key+'">'+g.label+'</button>';
+  }).join('');
+  row.querySelectorAll('.standings-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){renderStandingsForGame(btn.dataset.key)});
+  });
+}
+
+function renderStandingsForGame(gameKey){
+  currentStandingsGame=gameKey;
+  var gameConfig=STANDINGS_GAMES.filter(function(g){return g.key===gameKey})[0];
+  renderStandingsTabs();
+  $('boxSub').textContent=gameConfig.label+' · Player vs. Player';
+
   var listEl=$('standingsList');
   var tapLogEl=$('standingsTapLog');
   tapLogEl.style.display='none';
   listEl.innerHTML='<div class="box-empty">Loading standings…</div>';
 
-  fetchStandings().then(function(ranked){
-    var openRowName=null;
+  fetchStandingsFor(gameConfig).then(function(ranked){
+    if(currentStandingsGame!==gameKey)return;
     if(!ranked.length){
       listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
       return;
     }
+    var openRowName=null;
     listEl.innerHTML=ranked.map(function(p,i){
       var rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
       var safeName=p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -470,29 +499,27 @@ function renderStandings(){
         +'<span class="standings-pts">'+p.pts+'</span>'
         +'</div>';
     }).join('');
-    listEl.querySelectorAll('.standings-row').forEach(function(row){
-      row.addEventListener('click',function(){
-        var name=row.dataset.name;
-        if(openRowName===name){
-          tapLogEl.style.display='none';
-          openRowName=null;
-          return;
-        }
-        openRowName=name;
-        var p=ranked.find(function(r){return r.name===name});
-        renderTapLog(tapLogEl,p.shots,p.pts);
-        tapLogEl.style.display='flex';
-        row.insertAdjacentElement('afterend',tapLogEl);
+    if(gameConfig.rich){
+      listEl.querySelectorAll('.standings-row').forEach(function(row){
+        row.addEventListener('click',function(){
+          var name=row.dataset.name;
+          if(openRowName===name){tapLogEl.style.display='none';openRowName=null;return}
+          openRowName=name;
+          var p=ranked.filter(function(r){return r.name===name})[0];
+          renderTapLog(tapLogEl,p.shots,p.pts);
+          tapLogEl.style.display='flex';
+          row.insertAdjacentElement('afterend',tapLogEl);
+        });
       });
-    });
+    }
   }).catch(function(){
-    // A genuinely dropped connection — the player's own game is
-    // completely unaffected, only the shared board couldn't load.
-    listEl.innerHTML='<div class="box-empty">Couldn\'t reach the standings — check the connection. <span id="standingsRetryBtn" style="color:#FF6B35;text-decoration:underline;cursor:pointer">Try again</span></div>';
-    var retryBtn=document.getElementById('standingsRetryBtn');
-    if(retryBtn)retryBtn.addEventListener('click',function(){renderStandings()});
+    if(currentStandingsGame!==gameKey)return;
+    listEl.innerHTML='<div class="box-empty">Couldn\'t reach the standings — check the connection. <span class="standings-retry-btn" style="color:#FF6B35;text-decoration:underline;cursor:pointer">Try again</span></div>';
+    var retryBtn=listEl.querySelector('.standings-retry-btn');
+    if(retryBtn)retryBtn.addEventListener('click',function(){renderStandingsForGame(gameKey)});
   });
 }
+function renderStandings(){renderStandingsForGame(THIS_GAME_KEY)}
 
 // The Standings board opens in-page from wherever the player actually
 // is — the (rarely seen, since gameplay auto-starts) intro screen, or
