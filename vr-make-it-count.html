@@ -264,6 +264,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <div class="rule-t"><b>The target never disappears.</b> It stays on screen the whole time, drifting as it waits — but position isn't the signal. Read the arrow riding along with it, not where it's going.</div>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
+  <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
   <div class="game-switcher">
     <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
     <a class="switcher-btn game-active" href="vr-reaction-speed.html">Reaction<br>Speed</a>
@@ -296,7 +297,9 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
   <div class="final-label">Total Points</div>
-  <a href="vr-reactific.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:28px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#00e5ff,#FF6B35);color:#0a0a12;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
+  <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
+  <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
+  <a href="vr-reactific.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#00e5ff,#FF6B35);color:#0a0a12;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
 </div>
 
 <script>
@@ -334,6 +337,7 @@ function applyIntroTranslations(){
   var t=INTRO_I18N[introLang];
   $('fsBtn').textContent=t.fullscreen;
   $('bigStart').textContent=t.start;
+  $('openBoxBtn').textContent=t.standingsBtn;
 }
 $('introLangEN').addEventListener('click',function(){
   introLang='en';
@@ -516,17 +520,25 @@ function renderStandings(){
   });
 }
 
-// The intro screen's own Standings button is gone — this game's
-// standings are now only reached from the shared hub, which links
-// here with ?standings=1. Caught on load, before the player ever
-// sees the intro screen at all.
-if(new URLSearchParams(window.location.search).get('standings')==='1'){
+// The Standings board opens in-page from wherever the player actually
+// is — the (rarely seen, since gameplay auto-starts) intro screen, or
+// the end screen every player genuinely lands on. Close returns to
+// whichever one it was opened from, not always the same fixed screen.
+var standingsReturnScreen='screen-intro';
+function openStandings(fromScreen){
+  standingsReturnScreen=fromScreen;
   renderStandings();
-  $('screen-intro').style.display='none';
+  $(fromScreen).style.display='none';
   $('screen-box').style.display='flex';
 }
+$('openBoxBtn').addEventListener('click',function(){openStandings('screen-intro')});
+$('endStandingsBtn').addEventListener('click',function(){openStandings('screen-end')});
+if(new URLSearchParams(window.location.search).get('standings')==='1'){
+  openStandings('screen-intro');
+}
 $('closeBoxBtn').onclick=function(){
-  window.location.href='dynamic-basketball-standings.html';
+  $('screen-box').style.display='none';
+  $(standingsReturnScreen).style.display='flex';
 };
 
 var fsb=$('fsBtn');
@@ -852,15 +864,18 @@ function playBuzzer(){
 
 loadBest();
 
-// Opened directly from the hub's own "Standings" link for this game
-// goes straight to the shared board instead of the intro screen.
-// Otherwise, the intro screen (which now carries the name input
-// directly) is already visible by default — nothing else to do.
-if(new URLSearchParams(window.location.search).get('standings')==='1'){
-  renderStandings();
-  $('screen-intro').style.display='none';
-  $('screen-box').style.display='flex';
-}
+// Resets everything for a genuinely new player — a fresh name field,
+// game state zeroed out, straight back to the intro screen. Distinct
+// from "Next Game", which carries the same player's name forward
+// into the next quarter instead of asking again.
+$('nextPlayerBtn').addEventListener('click',function(){
+  currentPlayerName='';
+  $('playerNameInputMain').value='';
+  phase='idle';
+  $('screen-end').style.display='none';
+  $('screen-intro').style.display='flex';
+  $('playerNameInputMain').focus();
+});
 
 // Every visit launches straight into gameplay now — the name-entry
 // screen only ever mattered so the standings write had a real name
