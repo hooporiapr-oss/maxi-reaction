@@ -152,6 +152,18 @@ footer{
   cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);
 }
 
+/* Language toggle — mirrors the sound toggle on the opposite side,
+   same fixed/unobtrusive treatment. */
+#langToggle{
+  position:fixed;top:14px;left:14px;z-index:30;display:flex;gap:4px;
+}
+.lang-btn{
+  padding:9px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.3);
+  background:rgba(0,0,0,.45);color:#c9b8a8;font-size:.68rem;font-weight:900;
+  letter-spacing:.06em;cursor:pointer;backdrop-filter:blur(4px);
+}
+.lang-btn.active{border-color:#ff6b35;color:#ff6b35;background:rgba(255,107,53,.12)}
+
 /* Name entry — required before every full-game run, since the
    standings on the final score screen only mean something if every
    entry is honestly attributed to a real player. */
@@ -175,33 +187,37 @@ footer{
 </head>
 <body>
 <button id="soundToggle" aria-label="Toggle sound" title="Toggle beat sound">🔊</button>
+<div id="langToggle">
+  <button class="lang-btn active" id="langEN">EN</button>
+  <button class="lang-btn" id="langES">ES</button>
+</div>
 
 <div id="stage">
   <div id="panel">
     <div class="arena-title">REACTION <span>VELOCITY</span></div>
-    <div class="arena-sub">The Gap Between Seeing And Doing</div>
+    <div class="arena-sub" id="arenaSub">The Gap Between Seeing And Doing</div>
 
-    <div class="quarters-label">Practice A Single Quarter</div>
+    <div class="quarters-label" id="quartersLabel">Practice A Single Quarter</div>
     <div class="quarter-grid">
       <a class="quarter-card" href="vr-reactific.html">
         <div class="quarter-num">Q1</div>
         <div class="quarter-name">Reactific</div>
-        <div class="quarter-desc">Tap only on red — tap anything else and it costs you. Tests restraint as much as speed.</div>
+        <div class="quarter-desc" id="desc1">Tap only on red — tap anything else and it costs you. Tests restraint as much as speed.</div>
       </a>
       <a class="quarter-card" href="vr-reaction-speed.html">
         <div class="quarter-num">Q2</div>
         <div class="quarter-name">Reaction Speed</div>
-        <div class="quarter-desc">No colors, no rules — just a target that waits for you, scored on speed alone.</div>
+        <div class="quarter-desc" id="desc2">No colors, no rules — just a target that waits for you, scored on speed alone.</div>
       </a>
       <a class="quarter-card" href="vr-shoot-it-own-it.html">
         <div class="quarter-num">Q3</div>
         <div class="quarter-name">Shoot It. Own It.</div>
-        <div class="quarter-desc">An arrow flashes once, then it's gone — the four buttons reshuffle every round.</div>
+        <div class="quarter-desc" id="desc3">An arrow flashes once, then it's gone — the four buttons reshuffle every round.</div>
       </a>
       <a class="quarter-card" href="vr-make-it-count.html">
         <div class="quarter-num">Q4</div>
         <div class="quarter-name">Make It Count.</div>
-        <div class="quarter-desc">The target never disappears — position is never the signal, the arrow riding along with it is.</div>
+        <div class="quarter-desc" id="desc4">The target never disappears — position is never the signal, the arrow riding along with it is.</div>
       </a>
     </div>
 
@@ -212,8 +228,8 @@ footer{
 </div>
 
 <div id="screen-name-entry">
-  <div class="name-entry-title">WHO'S <span>PLAYING?</span></div>
-  <div class="name-entry-sub">Enter your name to run all four. Your final score gets tracked on the standings — every player competing for the same board.</div>
+  <div class="name-entry-title" id="nameEntryTitle">WHO'S <span>PLAYING?</span></div>
+  <div class="name-entry-sub" id="nameEntrySub">Enter your name to run all four. Your final score gets tracked on the standings — every player competing for the same board.</div>
   <input type="text" id="playerNameInput" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
   <button class="fullgame-btn" id="nameContinueBtn" style="max-width:400px">▶ Continue</button>
 </div>
@@ -228,6 +244,70 @@ soundBtn.addEventListener('click',function(e){
   soundBtn.textContent=muted?'🔇':'🔊';
   soundBtn.style.opacity=muted?'.55':'1';
 });
+
+// ══════════════════════════════════════════════════════
+//  LANGUAGE — same 'lc-lang' key used across every other Gostar
+//  Digital product, so a preference set on one page carries over
+//  when a player moves between them.
+// ══════════════════════════════════════════════════════
+var currentLang='en';
+var translations={
+  en:{
+    arenaSub:'The Gap Between Seeing And Doing',
+    quartersLabel:'Practice A Single Quarter',
+    desc1:'Tap only on red — tap anything else and it costs you. Tests restraint as much as speed.',
+    desc2:'No colors, no rules — just a target that waits for you, scored on speed alone.',
+    desc3:'An arrow flashes once, then it\'s gone — the four buttons reshuffle every round.',
+    desc4:'The target never disappears — position is never the signal, the arrow riding along with it is.',
+    fullGameBtn:'🏀 PLAY THE FULL GAME',
+    nameEntryTitlePre:'WHO\'S ',
+    nameEntryTitleSpan:'PLAYING?',
+    nameEntrySub:'Enter your name to run all four. Your final score gets tracked on the standings — every player competing for the same board.',
+    namePlaceholder:'Your name',
+    nameContinueBtn:'▶ Continue'
+  },
+  es:{
+    arenaSub:'La Brecha Entre Ver Y Actuar',
+    quartersLabel:'Practica Un Solo Cuarto',
+    desc1:'Toca solo en rojo — tocar cualquier otra cosa te cuesta. Pone a prueba el control tanto como la velocidad.',
+    desc2:'Sin colores, sin reglas — solo un objetivo que espera por ti, puntuado únicamente por velocidad.',
+    desc3:'Una flecha destella una vez y desaparece — los cuatro botones se reorganizan cada ronda.',
+    desc4:'El objetivo nunca desaparece — la posición nunca es la señal, la flecha que lo acompaña sí lo es.',
+    fullGameBtn:'🏀 JUGAR EL JUEGO COMPLETO',
+    nameEntryTitlePre:'¿QUIÉN ',
+    nameEntryTitleSpan:'JUEGA?',
+    nameEntrySub:'Ingresa tu nombre para correr los cuatro. Tu puntaje final se registra en la tabla — todos los jugadores compitiendo por el mismo tablero.',
+    namePlaceholder:'Tu nombre',
+    nameContinueBtn:'▶ Continuar'
+  }
+};
+function t(key){return translations[currentLang][key]||translations.en[key]||key}
+function updateUILanguage(){
+  document.getElementById('arenaSub').textContent=t('arenaSub');
+  document.getElementById('quartersLabel').textContent=t('quartersLabel');
+  document.getElementById('desc1').textContent=t('desc1');
+  document.getElementById('desc2').textContent=t('desc2');
+  document.getElementById('desc3').textContent=t('desc3');
+  document.getElementById('desc4').textContent=t('desc4');
+  document.getElementById('fullGameBtn').textContent=t('fullGameBtn');
+  document.getElementById('nameEntryTitle').innerHTML=t('nameEntryTitlePre')+'<span>'+t('nameEntryTitleSpan')+'</span>';
+  document.getElementById('nameEntrySub').textContent=t('nameEntrySub');
+  document.getElementById('playerNameInput').placeholder=t('namePlaceholder');
+  document.getElementById('nameContinueBtn').textContent=t('nameContinueBtn');
+  document.getElementById('langEN').classList.toggle('active',currentLang==='en');
+  document.getElementById('langES').classList.toggle('active',currentLang==='es');
+}
+function setLang(l){
+  currentLang=l;
+  try{localStorage.setItem('lc-lang',l)}catch(e){}
+  updateUILanguage();
+}
+document.getElementById('langEN').addEventListener('click',function(){setLang('en')});
+document.getElementById('langES').addEventListener('click',function(){setLang('es')});
+var savedLang;
+try{savedLang=localStorage.getItem('lc-lang')}catch(e){}
+if(savedLang)currentLang=savedLang;
+updateUILanguage();
 
 // Starts a real, tracked four-quarter run — a fresh scoreboard, and a
 // flag each quarter game checks for on its own end screen. Standalone
