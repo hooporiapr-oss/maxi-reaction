@@ -826,7 +826,7 @@ function endDrill(){
     if(isFullGameActive()){
       showQuarterStats(finalScore);
     }else{
-      window.location.href='reaction-velocity.html';
+      $('screen-end').style.display='flex';
     }
   },500));
 }
