@@ -163,26 +163,6 @@ footer{
   letter-spacing:.06em;cursor:pointer;backdrop-filter:blur(4px);
 }
 .lang-btn.active{border-color:#ff6b35;color:#ff6b35;background:rgba(255,107,53,.12)}
-
-/* Name entry — required before every full-game run, since the
-   standings on the final score screen only mean something if every
-   entry is honestly attributed to a real player. */
-#screen-name-entry{
-  position:fixed;inset:0;z-index:50;display:none;flex-direction:column;
-  align-items:center;justify-content:center;background:#000;padding:24px;text-align:center;
-}
-.name-entry-title{
-  font-size:1.5rem;font-weight:900;font-style:italic;letter-spacing:.03em;
-  text-transform:uppercase;margin-bottom:10px;text-shadow:0 0 30px rgba(255,30,60,.6);
-}
-.name-entry-title span{color:#ff1e3c}
-.name-entry-sub{font-size:.85rem;color:#c9b8a8;line-height:1.5;max-width:400px;margin-bottom:26px}
-.name-input{
-  width:100%;max-width:400px;padding:16px;border-radius:14px;border:2px solid rgba(255,30,60,.4);
-  background:rgba(255,255,255,.06);color:#fff;font-size:1.2rem;font-weight:900;
-  letter-spacing:.02em;text-align:center;font-family:Arial,sans-serif;margin-bottom:16px;
-}
-.name-input:focus{outline:none;border-color:#ff1e3c;box-shadow:0 0 24px rgba(255,30,60,.35)}
 </style>
 </head>
 <body>
@@ -227,12 +207,6 @@ footer{
   </div>
 </div>
 
-<div id="screen-name-entry">
-  <div class="name-entry-title" id="nameEntryTitle">WHO'S <span>PLAYING?</span></div>
-  <div class="name-entry-sub" id="nameEntrySub">Enter your name to run all four. Your final score gets tracked on the standings — every player competing for the same board.</div>
-  <input type="text" id="playerNameInput" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off">
-  <button class="fullgame-btn" id="nameContinueBtn" style="max-width:400px">▶ Continue</button>
-</div>
 <script>
 (function(){
 var soundBtn=document.getElementById('soundToggle');
@@ -259,12 +233,7 @@ var translations={
     desc2:'No colors, no rules — just a target that waits for you, scored on speed alone.',
     desc3:'An arrow flashes once, then it\'s gone — the four buttons reshuffle every round.',
     desc4:'The target never disappears — position is never the signal, the arrow riding along with it is.',
-    fullGameBtn:'🏀 PLAY THE FULL GAME',
-    nameEntryTitlePre:'WHO\'S ',
-    nameEntryTitleSpan:'PLAYING?',
-    nameEntrySub:'Enter your name to run all four. Your final score gets tracked on the standings — every player competing for the same board.',
-    namePlaceholder:'Your name',
-    nameContinueBtn:'▶ Continue'
+    fullGameBtn:'🏀 PLAY THE FULL GAME'
   },
   es:{
     arenaSub:'La Brecha Entre Ver Y Actuar',
@@ -273,12 +242,7 @@ var translations={
     desc2:'Sin colores, sin reglas — solo un objetivo que espera por ti, puntuado únicamente por velocidad.',
     desc3:'Una flecha destella una vez y desaparece — los cuatro botones se reorganizan cada ronda.',
     desc4:'El objetivo nunca desaparece — la posición nunca es la señal, la flecha que lo acompaña sí lo es.',
-    fullGameBtn:'🏀 JUGAR EL JUEGO COMPLETO',
-    nameEntryTitlePre:'¿QUIÉN ',
-    nameEntryTitleSpan:'JUEGA?',
-    nameEntrySub:'Ingresa tu nombre para correr los cuatro. Tu puntaje final se registra en la tabla — todos los jugadores compitiendo por el mismo tablero.',
-    namePlaceholder:'Tu nombre',
-    nameContinueBtn:'▶ Continuar'
+    fullGameBtn:'🏀 JUGAR EL JUEGO COMPLETO'
   }
 };
 function t(key){return translations[currentLang][key]||translations.en[key]||key}
@@ -290,10 +254,6 @@ function updateUILanguage(){
   document.getElementById('desc3').textContent=t('desc3');
   document.getElementById('desc4').textContent=t('desc4');
   document.getElementById('fullGameBtn').textContent=t('fullGameBtn');
-  document.getElementById('nameEntryTitle').innerHTML=t('nameEntryTitlePre')+'<span>'+t('nameEntryTitleSpan')+'</span>';
-  document.getElementById('nameEntrySub').textContent=t('nameEntrySub');
-  document.getElementById('playerNameInput').placeholder=t('namePlaceholder');
-  document.getElementById('nameContinueBtn').textContent=t('nameContinueBtn');
   document.getElementById('langEN').classList.toggle('active',currentLang==='en');
   document.getElementById('langES').classList.toggle('active',currentLang==='es');
 }
@@ -309,40 +269,14 @@ try{savedLang=localStorage.getItem('lc-lang')}catch(e){}
 if(savedLang)currentLang=savedLang;
 updateUILanguage();
 
-// Starts a real, tracked four-quarter run — a fresh scoreboard, and a
-// flag each quarter game checks for on its own end screen. Standalone
-// play (clicking straight into any single quarter from this page)
-// never sets this, so nothing changes for solo practice.
-function showNameEntry(){
-  document.getElementById('stage').style.display='none';
-  document.getElementById('screen-name-entry').style.display='flex';
-  setTimeout(function(){document.getElementById('playerNameInput').focus()},50);
-}
-document.getElementById('fullGameBtn').addEventListener('click',showNameEntry);
-
-// Reached from another game's own "Full Game" switcher slot — skips
-// the hub view entirely and goes straight to naming a player, the
-// same starting point every other switcher slot already lands on.
-if(new URLSearchParams(window.location.search).get('fullgame')==='1'){
-  showNameEntry();
-}
-
-document.getElementById('nameContinueBtn').addEventListener('click',function(){
-  var name=document.getElementById('playerNameInput').value.trim();
-  if(!name){
-    var input=document.getElementById('playerNameInput');
-    input.focus();
-    input.style.borderColor='#ff1e3c';
-    setTimeout(function(){input.style.borderColor=''},600);
-    return;
-  }
-  sessionStorage.setItem('hoop-player-name',name.slice(0,20));
-  sessionStorage.setItem('hoop-fullgame-active','1');
-  sessionStorage.setItem('hoop-quarter-scores',JSON.stringify({q1:0,q2:0,q3:0,q4:0}));
-  window.location.href='vr-reactific.html';
-});
-document.getElementById('playerNameInput').addEventListener('keydown',function(e){
-  if(e.key==='Enter')document.getElementById('nameContinueBtn').click();
+// Starts a real, tracked four-quarter run. Rather than a separate
+// name-entry screen living here on the hub, this sends the player
+// straight to Reactific's own intro screen — the same name field,
+// Start button, and Standings button every quarter already has. The
+// ?fullgame=1 flag tells that screen to start tracking the run the
+// moment its own Start button is genuinely clicked.
+document.getElementById('fullGameBtn').addEventListener('click',function(){
+  window.location.href='vr-reactific.html?fullgame=1';
 });
 })();
 </script>
