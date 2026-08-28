@@ -812,7 +812,12 @@ function endDrill(){
 
   $('endNum').textContent=finalScore;
 
-  recordScoreToStandings(currentPlayerName,finalScore,correctCount,idx,avgRT,shotLog);
+  // Individual-game standings only ever mean something for genuine
+  // solo play. During a tracked Full Game run, this quarter's score
+  // already goes to the combined board once, at the final score page
+  // — writing it here too would double-post the same result onto a
+  // table meant only for standalone runs.
+  if(!isFullGameActive())recordScoreToStandings(currentPlayerName,finalScore,correctCount,idx,avgRT,shotLog);
 
   timers.push(setTimeout(function(){
     if(isFullGameActive()){
