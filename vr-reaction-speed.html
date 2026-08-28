@@ -484,7 +484,12 @@ function endDrill(){
   var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
   if(isNewPts){best=finalScore;saveBest()}
   if(isNewMs){bestAvgMs=avgRT;saveBestMs()}
-  recordScoreToStandings(currentPlayerName,finalScore,avgRT);
+  // Individual-game standings only ever mean something for genuine
+  // solo play. During a tracked Full Game run, this quarter's score
+  // already goes to the combined board once, at the final score page
+  // — writing it here too would double-post the same result onto a
+  // table meant only for standalone runs.
+  if(!isFullGameActive())recordScoreToStandings(currentPlayerName,finalScore,avgRT);
 
   $('endNum').textContent=finalScore;
 
