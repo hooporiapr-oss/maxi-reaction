@@ -341,6 +341,15 @@ function handleStartClick(){
     return;
   }
   currentPlayerName=name.slice(0,20);
+  // Arrived here via the hub's own "Play The Full Game" button
+  // (?fullgame=1) — this genuine click, on this game's own Start
+  // button, is what actually begins a tracked four-quarter run, not
+  // some earlier screen back on the hub.
+  if(new URLSearchParams(window.location.search).get('fullgame')==='1'){
+    sessionStorage.setItem('hoop-player-name',currentPlayerName);
+    sessionStorage.setItem('hoop-fullgame-active','1');
+    sessionStorage.setItem('hoop-quarter-scores',JSON.stringify({q1:0,q2:0,q3:0,q4:0}));
+  }
   startDrill();
 }
 $('playerNameInputMain').addEventListener('keydown',function(e){
@@ -686,7 +695,12 @@ function endDrill(){
   if(isNewPts){best=finalScore;try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
   if(isNewMs){bestAvgMs=avgRT;try{localStorage.setItem(BEST_KEY+'-ms',String(bestAvgMs))}catch(e){}}
   submitScore(finalScore);
-  recordScoreToStandings(currentPlayerName,finalScore,avgRT);
+  // Individual-game standings only ever mean something for genuine
+  // solo play. During a tracked Full Game run, this quarter's score
+  // already goes to the combined board once, at the final score page
+  // — writing it here too would double-post the same result onto a
+  // table meant only for standalone runs.
+  if(!isFullGameActive())recordScoreToStandings(currentPlayerName,finalScore,avgRT);
 
   $('endNum').textContent=finalScore;
 
