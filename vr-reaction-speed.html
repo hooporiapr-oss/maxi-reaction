@@ -56,8 +56,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .box-lang-toggle{position:fixed;top:16px;right:16px;display:flex;gap:6px;z-index:60}
 .box-lang-btn{padding:7px 14px;border:1px solid rgba(255,107,53,.4);background:transparent;color:#9fb3c8;border-radius:8px;font-size:.72rem;font-weight:900;letter-spacing:.06em;cursor:pointer}
 .box-lang-btn.active{border-color:#FF6B35;color:#fff;background:rgba(255,107,53,.18)}
-.game-switcher{display:flex;gap:8px;max-width:420px;width:100%;margin:18px auto 0}
-.switcher-btn{flex:1;padding:10px 4px;border-radius:12px;text-decoration:none;text-align:center;font-size:.62rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.game-switcher{display:flex;gap:8px;max-width:420px;width:100%;margin:18px auto 0;flex-wrap:wrap}
+.switcher-btn{flex:1;min-width:70px;padding:10px 4px;border-radius:12px;text-decoration:none;text-align:center;font-size:.6rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase;line-height:1.3}
 .switcher-btn.game-active{border:2px solid rgba(255,107,53,.5);background:rgba(255,107,53,.12);color:#ffb38a}
 .switcher-btn.game-current{border:2px solid rgba(255,107,53,.8);background:rgba(255,107,53,.28);color:#fff}
 .best-line b{color:#ff1e3c}
@@ -149,6 +149,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
     <span class="switcher-btn game-current">Reaction<br>Speed</span>
     <a class="switcher-btn game-active" href="vr-shoot-it-own-it.html">Shoot It.<br>Own It.</a>
     <a class="switcher-btn game-active" href="vr-make-it-count.html">Make It<br>Count.</a>
+    <a class="switcher-btn game-active" href="vr-chain-reaction.html">Chain<br>Reaction</a>
+    <a class="switcher-btn game-active" href="vr-flashpoint.html">Flashpoint</a>
   </div>
 </div>
 
@@ -180,7 +182,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <script>
 var BPM=100;
 var PACE_MS=Math.round(60000/BPM); // one full beat at 100 BPM between one tap resolving and the next target appearing
-var TOTAL=25;
+var TOTAL=50;
 var BEST_KEY='rct-reaction-speed-best';
 var BEST_MS_KEY='rct-reaction-speed-best-ms';
 
@@ -210,7 +212,9 @@ var STANDINGS_GAMES=[
   {key:'reactific',label:'Reactific',table:'vr_reactific_standings',rich:false},
   {key:'reaction-speed',label:'Reaction Speed',table:'vr_reaction_speed_standings',rich:false},
   {key:'shoot-it',label:'Shoot It.',table:'vr_shoot_it_own_it_standings',rich:true},
-  {key:'make-it-count',label:'Make It Count.',table:'vr_make_it_count_standings',rich:true}
+  {key:'make-it-count',label:'Make It Count.',table:'vr_make_it_count_standings',rich:true},
+  {key:'chain-reaction',label:'Chain Reaction',table:'vr_chain_reaction_standings',rich:false},
+  {key:'flashpoint',label:'Flashpoint',table:'vr_flashpoint_standings',rich:false}
 ];
 var THIS_GAME_KEY='reaction-speed';
 var currentStandingsGame=THIS_GAME_KEY;
@@ -340,6 +344,7 @@ var phase='idle';
 var idx=0,score=0,best=0,totalRT=0,rtCount=0,bestRT=0,bestAvgMs=0;
 var timers=[],targetEl=$('target'),targetInner=$('target-inner');
 var targetX=0,targetY=0,tapLocked=false,shownAt=0;
+var responseTimer=null;
 
 var currentPlayerName='';
 function handleStartClick(){
@@ -466,14 +471,40 @@ function nextTarget(){
   targetEl.style.width=size+'px';targetEl.style.height=size+'px';
   targetEl.classList.add('visible');
   shownAt=performance.now();
+
+  // A target that isn't tapped within one beat at 100 BPM (600ms)
+  // genuinely times out — counted as a miss (no score, no
+  // reaction-time contribution) — and the next target flashes right
+  // after, keeping the pace honest instead of letting the player
+  // wait indefinitely for their own moment to react.
+  responseTimer=setTimeout(handleTimeout,PACE_MS);
+  timers.push(responseTimer);
 }
 targetEl.addEventListener('pointerdown',function(e){e.preventDefault();handleTap()});
+
+function handleTimeout(){
+  if(phase!=='running')return;
+  if(!targetEl.classList.contains('visible'))return; // a genuine tap already resolved this one
+  targetEl.classList.remove('visible');
+
+  idx++;
+  $('hLastMs').textContent='--';
+  $('hLeft').textContent=Math.max(0,TOTAL-idx);
+  msg('MISSED — TOO SLOW','watch');
+
+  if(idx>=TOTAL){
+    timers.push(setTimeout(endDrill,400));
+  }else{
+    timers.push(setTimeout(nextTarget,150));
+  }
+}
 
 function handleTap(){
   if(phase!=='running')return;
   if(!targetEl.classList.contains('visible'))return;
   if(tapLocked)return;
   tapLocked=true;setTimeout(function(){tapLocked=false},40);
+  if(responseTimer){clearTimeout(responseTimer);responseTimer=null}
 
   var rt=performance.now()-shownAt;
   targetEl.classList.remove('visible');
