@@ -396,7 +396,7 @@ function buildBoard(){
     el.className='fp-target';
     el.style.left=positions[i].x+'%';
     el.style.top=positions[i].y+'%';
-    el.style.background='radial-gradient(circle at 35% 35%, #fff2, '+colors[i]+')';
+    el.style.background=colors[i];
     el.style.color=colors[i];
     (function(idx){
       el.addEventListener('pointerdown',function(e){e.preventDefault();handleTargetTap(idx)});
