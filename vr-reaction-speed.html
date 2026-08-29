@@ -488,9 +488,15 @@ function handleTimeout(){
   targetEl.classList.remove('visible');
 
   idx++;
+  // A miss genuinely costs — real negative feedback, not just a
+  // withheld reward. Kept smaller than a successful tap's own range
+  // (150-300) so a couple of misses don't single-handedly sink an
+  // otherwise strong run, but it still stings enough to matter.
+  score-=100;
+  $('hScore').textContent=score;
   $('hLastMs').textContent='--';
   $('hLeft').textContent=Math.max(0,TOTAL-idx);
-  msg('MISSED — TOO SLOW','watch');
+  msg('MISSED — TOO SLOW · -100','watch');
 
   if(idx>=TOTAL){
     timers.push(setTimeout(endDrill,400));
