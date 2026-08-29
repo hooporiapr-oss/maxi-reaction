@@ -180,8 +180,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 </div>
 
 <script>
-var BPM=100;
-var PACE_MS=Math.round(60000/BPM); // one full beat at 100 BPM between one tap resolving and the next target appearing
+var BPM=80;
+var PACE_MS=Math.round(60000/BPM); // one full beat at 80 BPM between one tap resolving and the next target appearing
 var TOTAL=50;
 var BEST_KEY='rct-reaction-speed-best';
 var BEST_MS_KEY='rct-reaction-speed-best-ms';
@@ -472,7 +472,7 @@ function nextTarget(){
   targetEl.classList.add('visible');
   shownAt=performance.now();
 
-  // A target that isn't tapped within one beat at 100 BPM (600ms)
+  // A target that isn't tapped within one beat at 80 BPM (750ms)
   // genuinely times out — counted as a miss (no score, no
   // reaction-time contribution) — and the next target flashes right
   // after, keeping the pace honest instead of letting the player
