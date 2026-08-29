@@ -54,11 +54,8 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   transition:transform .08s cubic-bezier(.34,1.56,.64,1),left .5s linear,top .5s linear;
   display:flex;align-items:center;justify-content:center;
   font-size:3.2rem;color:#fff;line-height:1;text-shadow:0 2px 6px rgba(0,0,0,.6),0 0 4px rgba(0,0,0,.5);
-  background:
-    url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22%23231005%22%20stroke-width%3D%223.4%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E'),
-    radial-gradient(circle at 35% 32%,#ffb35c,#ff8c00 55%,#d9660a 85%);
-  background-size:100% 100%,100% 100%;
-  box-shadow:0 0 40px rgba(255,140,0,.85),0 0 80px rgba(255,140,0,.45);
+  border:3px solid rgba(124,58,237,.5);background:rgba(124,58,237,.08);
+  box-shadow:0 0 40px rgba(124,58,237,.5),0 0 80px rgba(124,58,237,.25);
 }
 #stimulus.visible{transform:translate(-50%,-50%) scale(1)}
 
@@ -300,14 +297,14 @@ var INTRO_I18N={
   en:{
     fullscreen:'⛶ Fullscreen',
     subtitle:'Flash Basketball VR · To The Beat',
-    rules:'<b>60 seconds.</b> A basketball never sits still — it drifts continuously across the court, carrying an arrow the whole time. Position never means anything. Read the arrow, not where the ball happens to be, and tap the matching Swish Shot as fast as you can. Every make is scored on real speed — the faster you are, the more points you earn. A wrong shot or no response at all earns nothing, but costs you nothing either. How many points can you rack up before the clock runs out?',
+    rules:'<b>60 seconds.</b> The target never sits still — it drifts continuously across the court, carrying an arrow the whole time. Position never means anything. Read the arrow, not where it happens to be, and tap the matching Swish Shot within one beat at 100 BPM. Every make is scored on real speed — the faster you are, the more points you earn. A wrong shot or no response costs you 100 points. How many points can you rack up before the clock runs out?',
     start:'▶ START',
     standingsBtn:'🏆 THE STANDINGS'
   },
   es:{
     fullscreen:'⛶ Pantalla Completa',
     subtitle:'Flash Basketball VR · Al Ritmo',
-    rules:'<b>60 segundos.</b> Un balón de baloncesto nunca se queda quieto — se desliza continuamente por la cancha, mostrando una flecha todo el tiempo. La posición nunca importa. Lee la flecha, no dónde está el balón, y toca el Swish Shot correcto tan rápido como puedas. Cada acierto se puntúa según tu velocidad real — mientras más rápido seas, más puntos ganas. Un tiro equivocado o ninguna respuesta no gana nada, pero tampoco te cuesta nada. ¿Cuántos puntos puedes acumular antes de que se acabe el tiempo?',
+    rules:'<b>60 segundos.</b> El objetivo nunca se queda quieto — se desliza continuamente por la cancha, mostrando una flecha todo el tiempo. La posición nunca importa. Lee la flecha, no dónde está, y toca el Swish Shot correcto dentro de un pulso a 100 BPM. Cada acierto se puntúa según tu velocidad real — mientras más rápido seas, más puntos ganas. Un tiro equivocado o ninguna respuesta te cuesta 100 puntos. ¿Cuántos puntos puedes acumular antes de que se acabe el tiempo?',
     start:'▶ EMPEZAR',
     standingsBtn:'🏆 LA CLASIFICACIÓN'
   }
