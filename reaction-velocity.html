@@ -181,6 +181,11 @@ footer{
         <div class="quarter-name">Make It Count.</div>
         <div class="quarter-desc" id="desc4">The target never disappears — position is never the signal, the arrow riding along with it is.</div>
       </a>
+      <a class="quarter-card" href="vr-chain-reaction.html">
+        <div class="quarter-num">Q5</div>
+        <div class="quarter-name">Chain Reaction</div>
+        <div class="quarter-desc" id="desc5">Six fixed colored targets — watch the chain, repeat it back, and it grows by one every round.</div>
+      </a>
     </div>
 
     <footer>Gostar Digital LLC</footer>
@@ -212,7 +217,8 @@ var translations={
     desc1:'Tap only on red — tap anything else and it costs you. Tests restraint as much as speed.',
     desc2:'No colors, no rules — just a target that waits for you, scored on speed alone.',
     desc3:'An arrow flashes once, then it\'s gone — the four buttons reshuffle every round.',
-    desc4:'The target never disappears — position is never the signal, the arrow riding along with it is.'
+    desc4:'The target never disappears — position is never the signal, the arrow riding along with it is.',
+    desc5:'Six fixed colored targets — watch the chain, repeat it back, and it grows by one every round.'
   },
   es:{
     arenaSub:'La Brecha Entre Ver Y Actuar',
@@ -220,7 +226,8 @@ var translations={
     desc1:'Toca solo en rojo — tocar cualquier otra cosa te cuesta. Pone a prueba el control tanto como la velocidad.',
     desc2:'Sin colores, sin reglas — solo un objetivo que espera por ti, puntuado únicamente por velocidad.',
     desc3:'Una flecha destella una vez y desaparece — los cuatro botones se reorganizan cada ronda.',
-    desc4:'El objetivo nunca desaparece — la posición nunca es la señal, la flecha que lo acompaña sí lo es.'
+    desc4:'El objetivo nunca desaparece — la posición nunca es la señal, la flecha que lo acompaña sí lo es.',
+    desc5:'Seis objetivos de colores fijos — mira la cadena, repítela, y crece uno más cada ronda.'
   }
 };
 function t(key){return translations[currentLang][key]||translations.en[key]||key}
@@ -231,6 +238,7 @@ function updateUILanguage(){
   document.getElementById('desc2').textContent=t('desc2');
   document.getElementById('desc3').textContent=t('desc3');
   document.getElementById('desc4').textContent=t('desc4');
+  document.getElementById('desc5').textContent=t('desc5');
   document.getElementById('langEN').classList.toggle('active',currentLang==='en');
   document.getElementById('langES').classList.toggle('active',currentLang==='es');
 }
