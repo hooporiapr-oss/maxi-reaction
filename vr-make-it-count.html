@@ -283,6 +283,13 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 var FLASH_BPM=180; // settled on through real testing — the one speed that works
 function getFlashMs(){return Math.round(60000/FLASH_BPM)}
 var PACE_MS=600;
+// The response window itself is genuinely a separate concern from
+// the gap between rounds — this game asks for a real multi-step
+// sequence (read the arrow, search the four reshuffled buttons,
+// locate the match, then tap), not a single direct reaction like
+// Reaction Speed. 50 BPM (1200ms) gives that sequence real room
+// without going back to an effectively unlimited window.
+var RESPONSE_MS=1200;
 var CONTEST_MS=60000; // how many threes can you make in a minute —
 // the clock is the only thing that ends this format, not a round count.
 var BEST_KEY='vr-make-it-count-best';
@@ -297,14 +304,14 @@ var INTRO_I18N={
   en:{
     fullscreen:'⛶ Fullscreen',
     subtitle:'Flash Basketball VR · To The Beat',
-    rules:'<b>60 seconds.</b> The target never sits still — it drifts continuously across the court, carrying an arrow the whole time. Position never means anything. Read the arrow, not where it happens to be, and tap the matching Swish Shot within one beat at 100 BPM. Every make is scored on real speed — the faster you are, the more points you earn. A wrong shot or no response costs you 100 points. How many points can you rack up before the clock runs out?',
+    rules:'<b>60 seconds.</b> The target never sits still — it drifts continuously across the court, carrying an arrow the whole time. Position never means anything. Read the arrow, not where it happens to be, and tap the matching Swish Shot within one beat at 50 BPM. Every make is scored on real speed — the faster you are, the more points you earn. A wrong shot or no response costs you 100 points. How many points can you rack up before the clock runs out?',
     start:'▶ START',
     standingsBtn:'🏆 THE STANDINGS'
   },
   es:{
     fullscreen:'⛶ Pantalla Completa',
     subtitle:'Flash Basketball VR · Al Ritmo',
-    rules:'<b>60 segundos.</b> El objetivo nunca se queda quieto — se desliza continuamente por la cancha, mostrando una flecha todo el tiempo. La posición nunca importa. Lee la flecha, no dónde está, y toca el Swish Shot correcto dentro de un pulso a 100 BPM. Cada acierto se puntúa según tu velocidad real — mientras más rápido seas, más puntos ganas. Un tiro equivocado o ninguna respuesta te cuesta 100 puntos. ¿Cuántos puntos puedes acumular antes de que se acabe el tiempo?',
+    rules:'<b>60 segundos.</b> El objetivo nunca se queda quieto — se desliza continuamente por la cancha, mostrando una flecha todo el tiempo. La posición nunca importa. Lee la flecha, no dónde está, y toca el Swish Shot correcto dentro de un pulso a 50 BPM. Cada acierto se puntúa según tu velocidad real — mientras más rápido seas, más puntos ganas. Un tiro equivocado o ninguna respuesta te cuesta 100 puntos. ¿Cuántos puntos puedes acumular antes de que se acabe el tiempo?',
     start:'▶ EMPEZAR',
     standingsBtn:'🏆 LA CLASIFICACIÓN'
   }
@@ -646,7 +653,7 @@ function nextTrial(){
   // BPM (600ms) to respond, or it's a genuine miss and the next
   // target flashes. No more waiting out a nearly-unlimited window.
   stopNoResponseTimer();
-  noResponseTimer=setTimeout(handleNoResponse,PACE_MS);
+  noResponseTimer=setTimeout(handleNoResponse,RESPONSE_MS);
 }
 function stopWander(){if(wanderTimer){clearInterval(wanderTimer);wanderTimer=null}}
 function stopNoResponseTimer(){if(noResponseTimer){clearTimeout(noResponseTimer);noResponseTimer=null}}
