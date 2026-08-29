@@ -186,7 +186,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 
 <script>
 var BEST_KEY='rct-flashpoint-best';
-var NUM_TARGETS=6;
+var NUM_TARGETS=5;
 var LIGHT_MS=400;    // how long each target stays lit during playback
 var GAP_MS=200;       // pause between targets during playback — together, 600ms per target = 100 BPM
 var LEVEL_PAUSE_MS=800; // pause after a completed level before the next, longer sequence flashes
@@ -194,7 +194,7 @@ var LEVEL_PAUSE_MS=800; // pause after a completed level before the next, longer
 // Six genuinely distinct colors — kept separate from the game's own
 // gold brand color, so the UI chrome never gets mistaken for a
 // seventh target.
-var TARGET_COLORS=['#ff1e3c','#ffd35a','#00D9A5','#3b82f6','#ff6b35','#ec4899'];
+var TARGET_COLORS=['#ff1e3c','#ffd35a','#00D9A5','#3b82f6','#ff6b35'];
 
 // The Gostar Digital standings board — reads from this table via the
 // standalone standings repo, separate from any personal-login system.
@@ -368,8 +368,9 @@ function ripple(x,y){var r=document.createElement('div');r.className='ripple';r.
 // size. Two rows of three, spread wide since there's a full screen
 // to work with here, not a boxed-in court.
 var LAYOUT=[
-  {x:20,y:38},{x:50,y:30},{x:80,y:38},
-  {x:20,y:68},{x:50,y:76},{x:80,y:68}
+  {x:22,y:28},{x:78,y:28},
+  {x:50,y:52},
+  {x:22,y:76},{x:78,y:76}
 ];
 
 function shuffle(arr){
