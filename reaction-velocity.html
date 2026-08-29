@@ -186,6 +186,11 @@ footer{
         <div class="quarter-name">Chain Reaction</div>
         <div class="quarter-desc" id="desc5">Six fixed colored targets — watch the chain, repeat it back, and it grows by one every round.</div>
       </a>
+      <a class="quarter-card" href="vr-flashpoint.html">
+        <div class="quarter-num">Q6</div>
+        <div class="quarter-name">Flashpoint</div>
+        <div class="quarter-desc" id="desc6">A new sequence flashes every round, one target longer — never the same one twice.</div>
+      </a>
     </div>
 
     <footer>Gostar Digital LLC</footer>
@@ -218,7 +223,8 @@ var translations={
     desc2:'No colors, no rules — just a target that waits for you, scored on speed alone.',
     desc3:'An arrow flashes once, then it\'s gone — the four buttons reshuffle every round.',
     desc4:'The target never disappears — position is never the signal, the arrow riding along with it is.',
-    desc5:'Six fixed colored targets — watch the chain, repeat it back, and it grows by one every round.'
+    desc5:'Six fixed colored targets — watch the chain, repeat it back, and it grows by one every round.',
+    desc6:'A new sequence flashes every round, one target longer — never the same one twice.'
   },
   es:{
     arenaSub:'La Brecha Entre Ver Y Actuar',
@@ -227,7 +233,8 @@ var translations={
     desc2:'Sin colores, sin reglas — solo un objetivo que espera por ti, puntuado únicamente por velocidad.',
     desc3:'Una flecha destella una vez y desaparece — los cuatro botones se reorganizan cada ronda.',
     desc4:'El objetivo nunca desaparece — la posición nunca es la señal, la flecha que lo acompaña sí lo es.',
-    desc5:'Seis objetivos de colores fijos — mira la cadena, repítela, y crece uno más cada ronda.'
+    desc5:'Seis objetivos de colores fijos — mira la cadena, repítela, y crece uno más cada ronda.',
+    desc6:'Una secuencia nueva destella cada ronda, un objetivo más larga — nunca la misma dos veces.'
   }
 };
 function t(key){return translations[currentLang][key]||translations.en[key]||key}
@@ -239,6 +246,7 @@ function updateUILanguage(){
   document.getElementById('desc3').textContent=t('desc3');
   document.getElementById('desc4').textContent=t('desc4');
   document.getElementById('desc5').textContent=t('desc5');
+  document.getElementById('desc6').textContent=t('desc6');
   document.getElementById('langEN').classList.toggle('active',currentLang==='en');
   document.getElementById('langES').classList.toggle('active',currentLang==='es');
 }
