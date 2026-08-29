@@ -154,6 +154,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
     <a class="switcher-btn game-active" href="vr-shoot-it-own-it.html">Shoot It.<br>Own It.</a>
     <a class="switcher-btn game-active" href="vr-make-it-count.html">Make It<br>Count.</a>
     <span class="switcher-btn game-current">Chain<br>Reaction</span>
+    <a class="switcher-btn game-active" href="vr-flashpoint.html">Flashpoint</a>
   </div>
 </div>
 
@@ -218,7 +219,8 @@ var STANDINGS_GAMES=[
   {key:'reaction-speed',label:'Reaction Speed',table:'vr_reaction_speed_standings',rich:false},
   {key:'shoot-it',label:'Shoot It.',table:'vr_shoot_it_own_it_standings',rich:true},
   {key:'make-it-count',label:'Make It Count.',table:'vr_make_it_count_standings',rich:true},
-  {key:'chain-reaction',label:'Chain Reaction',table:'vr_chain_reaction_standings',rich:false}
+  {key:'chain-reaction',label:'Chain Reaction',table:'vr_chain_reaction_standings',rich:false},
+  {key:'flashpoint',label:'Flashpoint',table:'vr_flashpoint_standings',rich:false}
 ];
 var THIS_GAME_KEY='chain-reaction';
 var currentStandingsGame=THIS_GAME_KEY;
@@ -393,7 +395,7 @@ function buildBoard(){
     el.className='cr-target';
     el.style.left=positions[i].x+'%';
     el.style.top=positions[i].y+'%';
-    el.style.background='radial-gradient(circle at 35% 35%, #fff2, '+colors[i]+')';
+    el.style.background=colors[i];
     el.style.color=colors[i];
     (function(idx){
       el.addEventListener('pointerdown',function(e){e.preventDefault();handleTargetTap(idx)});
