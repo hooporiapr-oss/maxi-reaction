@@ -467,7 +467,7 @@ function nextTarget(){
   targetX=pad+Math.random()*(innerWidth-pad*2);
   targetY=140+Math.random()*(innerHeight-230);
   targetEl.style.left=targetX+'px';targetEl.style.top=targetY+'px';
-  var size=90;
+  var size=Math.max(90,Math.min(150,Math.min(innerWidth,innerHeight)*0.20))+44;
   targetEl.style.width=size+'px';targetEl.style.height=size+'px';
   targetEl.classList.add('visible');
   shownAt=performance.now();
