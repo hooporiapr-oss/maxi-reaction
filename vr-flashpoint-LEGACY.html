@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+if (sessionStorage.getItem('reaction-velocity-gate-pass') !== '1') {
+  window.location.replace('index.html');
+}
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FLASHPOINT | Reaction Velocity</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;color:#fff;background:#000;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#space{position:fixed;inset:0;background:radial-gradient(ellipse at center,#201804 0%,#000 70%);overflow:hidden}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+#edge-glow{position:fixed;inset:0;pointer-events:none;z-index:1;border:3px solid transparent;box-shadow:inset 0 0 80px rgba(230,168,23,.28),0 0 80px rgba(230,168,23,.1)}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .1s}
+
+#hud{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-around;align-items:center;padding:14px 22px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent)}
+.hud-box{text-align:center}
+.hud-label{font-size:.5rem;color:#e6a817;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
+.hud-val{font-size:2rem;font-weight:900;line-height:1}
+#hLevel{color:#fff;font-size:2.6rem}#hScore{color:#ffd35a}#hBest{font-size:1.3rem;color:#9fb3c8}
+
+#msg{position:fixed;top:96px;left:50%;transform:translateX(-50%);z-index:20;font-size:1.6rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;text-align:center;pointer-events:none;text-shadow:0 0 30px currentColor;transition:opacity .3s}
+#msg.watch{color:#e6a817}#msg.go{color:#ffd35a}#msg.miss{color:#ff1e3c}
+
+/* The six fixed targets — position and color are randomized once at
+   the start of a run, then locked in place for the whole game. Same
+   board as Chain Reaction and Reaction Speed (full open stage, not a
+   boxed court). Unlike Chain Reaction, the sequence itself is never
+   remembered between levels here — only the board layout is fixed. */
+.fp-target{position:absolute;border-radius:50%;cursor:pointer;width:100px;height:100px;transform:translate(-50%,-50%) scale(1);transition:filter .12s,box-shadow .12s,transform .12s;pointer-events:none;opacity:1}
+.fp-target.ready{pointer-events:all;opacity:1}
+.fp-target.lit{filter:brightness(1.7) saturate(1.3);box-shadow:0 0 50px currentColor,0 0 90px currentColor;transform:translate(-50%,-50%) scale(1.08)}
+.fp-target.wrong{filter:grayscale(1) brightness(.5)}
+.ripple{position:fixed;border-radius:50%;border:3px solid #e6a817;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:14;animation:rippleOut .5s ease-out forwards}
+@keyframes rippleOut{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
+
+#controls{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;justify-content:center;gap:10px;padding:10px 16px 14px;background:linear-gradient(0deg,rgba(0,0,0,.9),transparent)}
+.ctrl-btn{height:48px;flex:0 1 170px;max-width:200px;border:2px solid rgba(230,168,23,.5);background:rgba(0,0,0,.4);border-radius:12px;color:#fff;font-size:1rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(4px);text-decoration:none;display:flex;align-items:center;justify-content:center}
+
+#screen-intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#201804 0%,#000 70%);padding:20px;text-align:center;overflow-y:auto}
+.vrr-logo{font-size:2.8rem;font-weight:900;font-style:italic;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 60px rgba(230,168,23,1);margin-bottom:6px}
+.vrr-logo span{color:#ffd35a}
+.vrr-sub{font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;color:#e6a817;margin-bottom:28px}
+.rule-t{font-size:.9rem;color:#cbd5e1;line-height:1.5;max-width:420px;margin-bottom:26px}
+.rule-t b{color:#fff}
+.big-btn{width:100%;max-width:440px;height:72px;border:none;border-radius:20px;background:linear-gradient(135deg,#e6a817,#ffd35a);color:#241a02;font-size:1.3rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 40px rgba(230,168,23,.7);animation:btnPulse 2s ease-in-out infinite}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 40px rgba(230,168,23,.7)}50%{box-shadow:0 0 80px rgba(230,168,23,1)}}
+.intro-back{position:fixed;top:16px;left:16px;padding:8px 16px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;text-decoration:none;z-index:60}
+.intro-fs{position:fixed;top:58px;right:16px;padding:8px 16px;border:2px solid rgba(230,168,23,.4);background:rgba(0,0,0,.5);color:#e6a817;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;cursor:pointer;z-index:60}
+@media(max-width:768px){.intro-fs{display:none}}
+.best-line{margin-top:18px;font-size:.85rem;color:#9fb3c8}
+.best-line b{color:#e6a817}
+.name-input{
+  width:100%;max-width:400px;padding:16px;border-radius:14px;border:2px solid rgba(230,168,23,.4);
+  background:rgba(255,255,255,.06);color:#fff;font-size:1.2rem;font-weight:900;
+  letter-spacing:.02em;text-align:center;font-family:Arial,sans-serif;margin-bottom:16px;
+}
+.name-input:focus{outline:none;border-color:#e6a817;box-shadow:0 0 24px rgba(230,168,23,.35)}
+.box-lang-toggle{position:fixed;top:16px;right:16px;display:flex;gap:6px;z-index:60}
+.box-lang-btn{padding:7px 14px;border:1px solid rgba(230,168,23,.4);background:transparent;color:#9fb3c8;border-radius:8px;font-size:.72rem;font-weight:900;letter-spacing:.06em;cursor:pointer}
+.box-lang-btn.active{border-color:#e6a817;color:#fff;background:rgba(230,168,23,.18)}
+.game-switcher{display:flex;gap:8px;max-width:420px;width:100%;margin:18px auto 0;flex-wrap:wrap}
+.switcher-btn{flex:1;min-width:70px;padding:10px 4px;border-radius:12px;text-decoration:none;text-align:center;font-size:.6rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase;line-height:1.3}
+.switcher-btn.game-active{border:2px solid rgba(230,168,23,.5);background:rgba(230,168,23,.12);color:#ffd98a}
+.switcher-btn.game-current{border:2px solid rgba(230,168,23,.8);background:rgba(230,168,23,.28);color:#fff}
+
+#screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#201804 0%,#000 70%);text-align:center;padding:20px}
+.final-num{font-size:6rem;font-weight:900;color:#e6a817;line-height:1;text-shadow:0 0 60px rgba(230,168,23,.9)}
+.final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
+
+#countdown{position:fixed;inset:0;z-index:56;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#201804 0%,#000 70%)}
+#bigCount{font-size:8rem;font-weight:900;color:#e6a817;text-shadow:0 0 60px rgba(230,168,23,.9)}
+@media(max-width:420px){.vrr-logo{font-size:2.1rem}.big-btn{height:60px;font-size:1.1rem}}
+
+/* Standings — same in-page, tabbed pattern as every other game in
+   this family. Flashpoint only ever tracks a final score (the
+   longest sequence reached) — no reaction time, no clock — so this
+   uses the flat, non-expandable list shape. */
+#screen-box{position:fixed;inset:0;z-index:58;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#201804 0%,#000 70%);padding:24px;overflow-y:auto}
+.box-title{font-size:1.7rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 0 40px rgba(230,168,23,.8);margin-bottom:2px}
+.box-title span{color:#e6a817}
+.box-sub{font-size:.65rem;letter-spacing:.24em;text-transform:uppercase;color:#e6a817;margin-bottom:22px}
+.box-section{width:100%;max-width:600px;margin-bottom:24px}
+.box-section-label{font-size:.65rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#ffd35a;margin-bottom:8px;text-align:left;padding-left:4px}
+.box-empty{color:#7fa8c0;font-size:.85rem;padding:24px 8px;font-style:italic;text-align:center}
+.box-back-btn{width:100%;max-width:440px;height:56px;border:none;border-radius:16px;background:linear-gradient(135deg,#e6a817,#ffd35a);color:#241a02;font-size:1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(230,168,23,.6);margin-top:6px}
+.standings-row{font-size:.8rem;color:#9fb3c8;padding:10px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:12px}
+.standings-row:last-child{border-bottom:none}
+.standings-rank{font-weight:900;font-size:1.05rem;color:#e6a817;min-width:28px}
+.standings-row.rank-1 .standings-rank{color:#ffd35a}
+.standings-row.rank-2 .standings-rank{color:#c4b5fd}
+.standings-row.rank-3 .standings-rank{color:#fb923c}
+.standings-name{flex:1;color:#fff;font-weight:700;text-align:left}
+.standings-pts{color:#00e5ff;font-weight:900;font-size:1rem}
+.standings-bpm{color:#9fb3c8;font-size:.72rem;min-width:64px;text-align:right}
+.box-open-btn{width:100%;max-width:420px;height:52px;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.1);border-radius:14px;color:#00e5ff;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:6px}
+.standings-tab-row{display:flex;gap:6px;width:100%;max-width:600px;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.standings-tab{padding:8px 14px;border-radius:999px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:#9fb3c8;font-size:.68rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.standings-tab.active{border-color:#e6a817;color:#e6a817;background:rgba(230,168,23,.1)}
+.tap-log{display:flex;flex-wrap:wrap;gap:4px;padding:10px;background:rgba(230,168,23,.05);border:1px solid rgba(230,168,23,.25);border-radius:12px;margin-top:8px}
+.tap-chip{flex:0 0 auto;min-width:44px;padding:4px 6px;border-radius:7px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:.62rem;font-weight:900;line-height:1.3}
+.tap-chip.hit{background:rgba(255,107,53,.22);border:1px solid rgba(255,107,53,.5);color:#c4b5fd}
+.tap-chip.miss{background:rgba(255,20,147,.16);border:1px solid rgba(255,20,147,.4);color:#ff8fb8}
+.tap-chip .tap-bpm{display:block;font-size:.68rem}
+.tap-chip .tap-pts{display:block;opacity:.85;font-size:.58rem;margin-top:1px}
+.tap-log-total{width:100%;text-align:center;margin-top:0;padding:8px 14px 14px;border-top:1px solid rgba(230,168,23,.25);font-size:.85rem;font-weight:900;color:#fff}
+.tap-log-total b{color:#00e5ff;font-size:1.1rem}
+.tap-log-empty{color:#7fa8c0;font-size:.75rem;font-style:italic;padding:8px}
+.next-player-btn{margin-top:28px;height:64px;padding:0 40px;border:none;border-radius:16px;background:linear-gradient(120deg,#e6a817,#ffd35a);color:#241a02;font-size:1.15rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(230,168,23,.6)}
+</style>
+</head>
+<body>
+<div id="space">
+  <canvas id="stars"></canvas>
+  <div id="edge-glow"></div>
+  <div id="flash"></div>
+  <div id="targetLayer"></div>
+</div>
+
+<div id="hud">
+  <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="hLevel">0</div></div>
+  <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hScore">0</div></div>
+  <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val" id="hBest">0</div></div>
+</div>
+
+<div id="msg" class="watch"></div>
+
+<div id="controls">
+  <a class="ctrl-btn" href="reaction-velocity.html">← Exit</a>
+  <button class="ctrl-btn" id="fsBtnGame">⛶ Full Court</button>
+</div>
+
+<!-- INTRO -->
+<div id="screen-intro">
+  <a class="intro-back" href="reaction-velocity.html">← Exit</a>
+  <button class="intro-fs" id="fsBtn" data-i18n="fullscreen">⛶ Fullscreen</button>
+  <div class="box-lang-toggle">
+    <button class="box-lang-btn active" id="introLangEN">EN</button>
+    <button class="box-lang-btn" id="introLangES">ES</button>
+  </div>
+  <div class="vrr-logo">FLASH<span>POINT</span></div>
+  <div class="vrr-sub">Reaction Velocity · A New Flash, Every Level</div>
+  <div class="rule-t" id="ruleText"><b>Six colored targets, fixed in place.</b> Watch a sequence flash, then repeat it back. Every level is one target longer — and a genuinely brand new sequence, never the same one you just learned. How far can you read before you miss?</div>
+  <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:320px;margin:8px auto">
+  <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ START</button>
+  <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
+  <div class="best-line" id="bestLine"></div>
+  <div class="game-switcher">
+    <a class="switcher-btn game-active" href="vr-reaction-speed.html">Reaction<br>Speed</a>
+    <a class="switcher-btn game-active" href="vr-reactific.html">Reactific</a>
+    <a class="switcher-btn game-active" href="vr-shoot-it-own-it.html">Shoot It.<br>Own It.</a>
+    <a class="switcher-btn game-active" href="vr-make-it-count.html">Make It<br>Count.</a>
+    <a class="switcher-btn game-active" href="vr-chain-reaction.html">Chain<br>Reaction</a>
+    <span class="switcher-btn game-current">Flashpoint</span>
+  </div>
+</div>
+
+<!-- THE STANDINGS -->
+<div id="screen-box">
+  <button class="box-back-btn" id="closeBoxBtn" style="margin-top:0;margin-bottom:20px">← Back</button>
+  <div class="box-title">THE <span>STANDINGS</span></div>
+  <div class="box-sub" id="boxSub">Flashpoint · Player vs. Player</div>
+  <div class="standings-tab-row" id="standingsTabRow"></div>
+  <div class="box-section">
+    <div class="box-section-label">Standings — Best Score Per Player</div>
+    <div id="standingsList"></div>
+    <div class="tap-log" id="standingsTapLog" style="display:none"></div>
+  </div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="countdown"><div id="bigCount">3</div></div>
+
+<!-- END -->
+<div id="screen-end">
+  <div class="final-num" id="endNum">0</div>
+  <div class="final-label">Longest Flash</div>
+  <button class="box-open-btn" id="endStandingsBtn" style="max-width:280px;margin-top:20px">🏆 THE STANDINGS</button>
+  <button class="next-player-btn" id="nextPlayerBtn">▶ NEXT PLAYER</button>
+  <a href="vr-reactific.html" onclick="sessionStorage.setItem('db-carryover-name',currentPlayerName)" style="display:block;margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto;text-decoration:none;text-align:center;padding:14px 24px;border-radius:100px;background:linear-gradient(135deg,#e6a817,#ffd35a);color:#241a02;font-weight:900;letter-spacing:1px;font-size:.95rem">▶ NEXT GAME</a>
+</div>
+
+<script>
+var BEST_KEY='rct-flashpoint-best';
+var NUM_TARGETS=5;
+var LIGHT_MS=400;    // how long each target stays lit during playback
+var GAP_MS=200;       // pause between targets during playback — together, 600ms per target = 100 BPM
+var LEVEL_PAUSE_MS=800; // pause after a completed level before the next, longer sequence flashes
+
+// Six genuinely distinct colors — kept separate from the game's own
+// gold brand color, so the UI chrome never gets mistaken for a
+// seventh target.
+var TARGET_COLORS=['#ff1e3c','#ffd35a','#00D9A5','#3b82f6','#ff6b35'];
+
+// The Gostar Digital standings board — reads from this table via the
+// standalone standings repo, separate from any personal-login system.
+var SB_URL='https://sdaphocueugzfvjovuxd.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
+var SB_TABLE='vr_flashpoint_standings';
+function recordScoreToStandings(name,finalScore){
+  return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({player_name:name,score:finalScore,avg_ms:null,school_name:sessionStorage.getItem('reaction-velocity-school')||null})
+  }).catch(function(){});
+}
+
+// ══════════════════════════════════════════════════════
+//  STANDINGS — every game's own board, one tap away from any other.
+//  Flashpoint only ever saves a score (longest sequence reached) — no
+//  reaction time, no shot log — so it uses the flat, non-rich shape,
+//  same as Reactific, Reaction Speed, and Chain Reaction.
+// ══════════════════════════════════════════════════════
+var STANDINGS_GAMES=[
+  {key:'reactific',label:'Reactific',table:'vr_reactific_standings',rich:false},
+  {key:'reaction-speed',label:'Reaction Speed',table:'vr_reaction_speed_standings',rich:false},
+  {key:'shoot-it',label:'Shoot It.',table:'vr_shoot_it_own_it_standings',rich:true},
+  {key:'make-it-count',label:'Make It Count.',table:'vr_make_it_count_standings',rich:true},
+  {key:'chain-reaction',label:'Chain Reaction',table:'vr_chain_reaction_standings',rich:false},
+  {key:'flashpoint',label:'Flashpoint',table:'vr_flashpoint_standings',rich:false}
+];
+var THIS_GAME_KEY='flashpoint';
+var currentStandingsGame=THIS_GAME_KEY;
+
+function renderTapLog(container,shots,finalScore){
+  if(!shots||!shots.length){
+    container.innerHTML='<div class="tap-log-empty">No tap-by-tap detail saved for this game.</div>';
+    return;
+  }
+  var chips=shots.map(function(s){
+    if(s.hit){
+      return '<div class="tap-chip hit"><span class="tap-bpm">'+s.bpm+' BPM</span><span class="tap-pts">+'+s.pts+'</span></div>';
+    }
+    var label=s.noResponse?'NO RESP':(s.bpm>0?s.bpm+' BPM':'MISS');
+    return '<div class="tap-chip miss"><span class="tap-bpm">'+label+'</span><span class="tap-pts">'+s.pts+'</span></div>';
+  }).join('');
+  container.innerHTML=chips+'<div class="tap-log-total">Final Total: <b>'+finalScore+' PTS</b></div>';
+}
+
+function fetchStandingsFor(gameConfig){
+  var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms';
+  var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc';
+  return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
+    .then(function(rows){
+      var best={};
+      (rows||[]).forEach(function(r){
+        var existing=best[r.player_name];
+        if(!existing||r.score>existing.pts){
+          best[r.player_name]=gameConfig.rich
+            ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]}
+            :{name:r.player_name,pts:r.score,ms:r.avg_ms};
+        }
+      });
+      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.pts-a.pts});
+    });
+}
+
+function renderStandingsTabs(){
+  var row=$('standingsTabRow');
+  row.innerHTML=STANDINGS_GAMES.map(function(g){
+    return '<button class="standings-tab'+(g.key===currentStandingsGame?' active':'')+'" data-key="'+g.key+'">'+g.label+'</button>';
+  }).join('');
+  row.querySelectorAll('.standings-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){renderStandingsForGame(btn.dataset.key)});
+  });
+}
+
+function renderStandingsForGame(gameKey){
+  currentStandingsGame=gameKey;
+  var gameConfig=STANDINGS_GAMES.filter(function(g){return g.key===gameKey})[0];
+  renderStandingsTabs();
+  $('boxSub').textContent=gameConfig.label+' · Player vs. Player';
+
+  var listEl=$('standingsList');
+  var tapLogEl=$('standingsTapLog');
+  tapLogEl.style.display='none';
+  listEl.innerHTML='<div class="box-empty">Loading standings…</div>';
+
+  fetchStandingsFor(gameConfig).then(function(ranked){
+    if(currentStandingsGame!==gameKey)return;
+    if(!ranked.length){
+      listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
+      return;
+    }
+    var openRowName=null;
+    listEl.innerHTML=ranked.map(function(p,i){
+      var rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+      var safeName=p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
+        +'<span class="standings-rank">'+(i+1)+'</span>'
+        +'<span class="standings-name">'+safeName+'</span>'
+        +'<span class="standings-bpm">'+(p.ms>0?bpmFromMs(p.ms)+' BPM':'')+'</span>'
+        +'<span class="standings-pts">'+p.pts+'</span>'
+        +'</div>';
+    }).join('');
+    if(gameConfig.rich){
+      listEl.querySelectorAll('.standings-row').forEach(function(row){
+        row.addEventListener('click',function(){
+          var name=row.dataset.name;
+          if(openRowName===name){tapLogEl.style.display='none';openRowName=null;return}
+          openRowName=name;
+          var p=ranked.filter(function(r){return r.name===name})[0];
+          renderTapLog(tapLogEl,p.shots,p.pts);
+          tapLogEl.style.display='flex';
+          row.insertAdjacentElement('afterend',tapLogEl);
+        });
+      });
+    }
+  }).catch(function(){
+    if(currentStandingsGame!==gameKey)return;
+    listEl.innerHTML='<div class="box-empty">Couldn\'t reach the standings — check the connection. <span class="standings-retry-btn" style="color:#e6a817;text-decoration:underline;cursor:pointer">Try again</span></div>';
+    var retryBtn=listEl.querySelector('.standings-retry-btn');
+    if(retryBtn)retryBtn.addEventListener('click',function(){renderStandingsForGame(gameKey)});
+  });
+}
+function renderStandings(){renderStandingsForGame(THIS_GAME_KEY)}
+
+var standingsReturnScreen='screen-intro';
+function openStandings(fromScreen){
+  standingsReturnScreen=fromScreen;
+  renderStandings();
+  $(fromScreen).style.display='none';
+  $('screen-box').style.display='flex';
+}
+$('openBoxBtn').addEventListener('click',function(){openStandings('screen-intro')});
+$('endStandingsBtn').addEventListener('click',function(){openStandings('screen-end')});
+if(new URLSearchParams(window.location.search).get('standings')==='1'){
+  openStandings('screen-intro');
+}
+$('closeBoxBtn').onclick=function(){
+  $('screen-box').style.display='none';
+  $(standingsReturnScreen).style.display='flex';
+};
+$('nextPlayerBtn').addEventListener('click',function(){
+  currentPlayerName='';
+  $('playerNameInputMain').value='';
+  phase='idle';
+  $('screen-end').style.display='none';
+  $('screen-intro').style.display='flex';
+  $('playerNameInputMain').focus();
+});
+
+function $(id){return document.getElementById(id)}
+function bpmFromMs(v){return v?Math.round(60000/v):0}
+
+var phase='idle';
+var sequence=[];     // completely regenerated, fresh and random, every level — never extends the previous one
+var playerIdx=0;      // how far into the current sequence the player has correctly tapped back
+var level=0;
+var score=0;
+var best=0;
+var timers=[];
+var targetEls=[];     // the six fixed <div> elements, indexed 0-5
+var currentPlayerName='';
+
+function clrT(){timers.forEach(clearTimeout);timers=[]}
+function msg(t,c){var e=$('msg');e.textContent=t;e.className=c||'watch'}
+function flash(){var f=$('flash');f.style.background='rgba(230,168,23,.12)';f.style.opacity='1';setTimeout(function(){f.style.opacity='0'},100)}
+function ripple(x,y){var r=document.createElement('div');r.className='ripple';r.style.left=x+'px';r.style.top=y+'px';r.style.width='50px';r.style.height='50px';document.body.appendChild(r);setTimeout(function(){r.remove()},520)}
+
+// Six fixed, non-overlapping spots across the open stage — laid out
+// as percentages so the same six positions hold up at any screen
+// size. Two rows of three, spread wide since there's a full screen
+// to work with here, not a boxed-in court.
+var LAYOUT=[
+  {x:22,y:28},{x:78,y:28},
+  {x:50,y:52},
+  {x:22,y:76},{x:78,y:76}
+];
+
+function shuffle(arr){
+  var a=arr.slice();
+  for(var i=a.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var tmp=a[i];a[i]=a[j];a[j]=tmp;
+  }
+  return a;
+}
+
+// Genuinely locks in six fixed targets — position AND color — for
+// the whole run. Reshuffled only when a brand new game starts, never
+// mid-run — the board itself is the one thing that stays learnable
+// across levels here, even though the sequences never repeat.
+function buildBoard(){
+  var layer=$('targetLayer');
+  layer.innerHTML='';
+  targetEls=[];
+  var positions=shuffle(LAYOUT);
+  var colors=shuffle(TARGET_COLORS);
+  for(var i=0;i<NUM_TARGETS;i++){
+    var el=document.createElement('div');
+    el.className='fp-target';
+    el.style.left=positions[i].x+'%';
+    el.style.top=positions[i].y+'%';
+    el.style.background=colors[i];
+    el.style.color=colors[i];
+    (function(idx){
+      el.addEventListener('pointerdown',function(e){e.preventDefault();handleTargetTap(idx)});
+    })(i);
+    layer.appendChild(el);
+    targetEls.push(el);
+  }
+}
+
+function lightTarget(idx){targetEls[idx].classList.add('lit')}
+function unlightTarget(idx){targetEls[idx].classList.remove('lit')}
+function setReady(on){targetEls.forEach(function(el){el.classList.toggle('ready',on)})}
+
+function startDrill(){
+  if(phase==='running')return;
+  try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
+  $('screen-intro').style.display='none';
+  $('countdown').style.display='flex';
+  var n=3;$('bigCount').textContent=n;
+  var iv=setInterval(function(){
+    n--;
+    if(n<=0){clearInterval(iv);$('countdown').style.display='none';runDrill()}
+    else{$('bigCount').textContent=n}
+  },800);
+}
+
+function runDrill(){
+  phase='running';sequence=[];playerIdx=0;level=0;score=0;
+  $('hLevel').textContent='0';$('hScore').textContent='0';
+  buildBoard();
+  msg('GET READY...','go');
+  timers.push(setTimeout(startLevel,900));
+}
+
+// The key difference from Chain Reaction: this genuinely, completely
+// regenerates a brand new random sequence every level — never the
+// previous sequence with one target appended. Only its length grows.
+function startLevel(){
+  if(phase!=='running')return;
+  playerIdx=0;
+  level++;
+  sequence=[];
+  for(var i=0;i<level;i++){
+    sequence.push(Math.floor(Math.random()*NUM_TARGETS));
+  }
+  $('hLevel').textContent=level;
+  setReady(false);
+  msg('WATCH THE FLASH','watch');
+  playSequence(0);
+}
+
+function playSequence(i){
+  if(phase!=='running')return;
+  if(i>=sequence.length){
+    setReady(true);
+    msg('YOUR TURN','go');
+    return;
+  }
+  var idx=sequence[i];
+  lightTarget(idx);
+  timers.push(setTimeout(function(){
+    unlightTarget(idx);
+    timers.push(setTimeout(function(){playSequence(i+1)},GAP_MS));
+  },LIGHT_MS));
+}
+
+function handleTargetTap(idx){
+  if(phase!=='running')return;
+  if(!targetEls[idx].classList.contains('ready'))return;
+
+  var rect=targetEls[idx].getBoundingClientRect();
+  ripple(rect.left+rect.width/2,rect.top+rect.height/2);flash();
+
+  if(idx===sequence[playerIdx]){
+    lightTarget(idx);
+    setTimeout(function(){unlightTarget(idx)},220);
+    playerIdx++;
+    if(playerIdx>=sequence.length){
+      // Level genuinely completed — score reflects the longest
+      // sequence read correctly so far, then a brand new, longer,
+      // unrelated sequence gets built for the next level.
+      score=level;
+      $('hScore').textContent=score;
+      setReady(false);
+      msg('✅ NAILED IT','go');
+      timers.push(setTimeout(startLevel,LEVEL_PAUSE_MS));
+    }
+  }else{
+    targetEls[idx].classList.add('wrong');
+    endDrill();
+  }
+}
+
+function endDrill(){
+  if(phase==='done')return;
+  phase='done';clrT();setReady(false);
+  var finalScore=score;
+  var isNewBest=finalScore>best;
+  if(isNewBest){best=finalScore;saveBest()}
+  recordScoreToStandings(currentPlayerName,finalScore);
+
+  msg('SEQUENCE MISSED','miss');
+  timers.push(setTimeout(function(){
+    $('endNum').textContent=finalScore;
+    $('screen-end').style.display='flex';
+  },700));
+}
+
+function loadBest(){
+  best=0;
+  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
+  $('hBest').textContent=best;
+  $('bestLine').innerHTML=best>0?('Your best: <b>'+best+' targets</b>'):'';
+}
+function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
+
+var fsb=$('fsBtn');
+if(fsb)fsb.onclick=async function(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+var fsg=$('fsBtnGame');
+if(fsg)fsg.onclick=async function(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
+
+(function(){
+  var c=$('stars'),ctx=c.getContext('2d'),stars=[];
+  function size(){c.width=innerWidth;c.height=innerHeight}
+  size();addEventListener('resize',size);
+  for(var i=0;i<150;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.4+.3,o:Math.random()*.6+.1,s:Math.random()*.5+.2});
+  (function draw(){ctx.clearRect(0,0,c.width,c.height);var t=Date.now()/1000;stars.forEach(function(s){var p=s.o+Math.sin(t*s.s)*.13;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.283);ctx.fillStyle='rgba(255,255,255,'+Math.max(0,Math.min(1,p))+')';ctx.fill()});requestAnimationFrame(draw)})();
+})();
+
+function handleStartClick(){
+  var nameField=$('playerNameInputMain');
+  var name=nameField.value.trim();
+  if(!name){
+    nameField.focus();
+    nameField.style.borderColor='#ff1e3c';
+    setTimeout(function(){nameField.style.borderColor=''},600);
+    return;
+  }
+  currentPlayerName=name.slice(0,20);
+  startDrill();
+}
+$('playerNameInputMain').addEventListener('keydown',function(e){
+  if(e.key==='Enter')handleStartClick();
+});
+
+(function(){
+  var carried=sessionStorage.getItem('db-carryover-name');
+  if(carried){
+    $('playerNameInputMain').value=carried;
+    currentPlayerName=carried;
+    sessionStorage.removeItem('db-carryover-name');
+  }
+})();
+
+var INTRO_I18N={
+  en:{
+    fullscreen:'⛶ Fullscreen',
+    start:'▶ START',
+    standingsBtn:'🏆 THE STANDINGS',
+    ruleText:'<b>Six colored targets, fixed in place.</b> Watch a sequence flash, then repeat it back. Every level is one target longer — and a genuinely brand new sequence, never the same one you just learned. How far can you read before you miss?'
+  },
+  es:{
+    fullscreen:'⛶ Pantalla Completa',
+    start:'▶ EMPEZAR',
+    standingsBtn:'🏆 LA CLASIFICACIÓN',
+    ruleText:'<b>Seis objetivos de colores, en posición fija.</b> Mira una secuencia destellar, luego repítela. Cada nivel es un objetivo más largo — y una secuencia genuinamente nueva, nunca la misma que acabas de aprender. ¿Hasta dónde puedes leer antes de fallar?'
+  }
+};
+var introLang='en';
+function applyIntroTranslations(){
+  var t=INTRO_I18N[introLang];
+  $('fsBtn').textContent=t.fullscreen;
+  $('bigStart').textContent=t.start;
+  $('openBoxBtn').textContent=t.standingsBtn;
+  $('ruleText').innerHTML=t.ruleText;
+}
+$('introLangEN').addEventListener('click',function(){
+  introLang='en';
+  this.classList.add('active');
+  $('introLangES').classList.remove('active');
+  applyIntroTranslations();
+});
+$('introLangES').addEventListener('click',function(){
+  introLang='es';
+  this.classList.add('active');
+  $('introLangEN').classList.remove('active');
+  applyIntroTranslations();
+});
+
+loadBest();
+buildBoard();
+</script>
+</body>
+</html>
