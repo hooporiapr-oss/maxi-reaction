@@ -269,7 +269,13 @@ function renderHitMissDetail(container,hits,misses,avgMs){
   }
   var total=hits+misses;
   var rate=total>0?Math.round((hits/total)*100):0;
-  var avgLine=avgMs>0?('<div class="tap-log-total">Avg Reaction Time: <b>'+Math.round(avgMs)+' ms</b></div>'):'';
+  // BPM, not milliseconds — a faster reaction genuinely produces a
+  // higher BPM (60000/ms), so "higher number = better" finally holds
+  // true here, unlike ms where a bigger number means a slower tap.
+  // Full decimal precision, not the rounded whole-number BPM used
+  // elsewhere in the game, since this is meant to be a real,
+  // fine-grained tiebreaker stat, not a quick glance figure.
+  var avgLine=avgMs>0?('<div class="tap-log-total">Avg Speed: <b>'+(60000/avgMs).toFixed(2)+' BPM</b></div>'):'';
   container.innerHTML=
      '<div class="hitmiss-grid" style="width:100%">'
     +'<div class="hitmiss-cell hits"><div class="hitmiss-val">'+hits+'</div><div class="hitmiss-lbl">Hits</div></div>'
