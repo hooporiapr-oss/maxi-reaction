@@ -262,19 +262,21 @@ function renderTapLog(container,shots,finalScore){
 // Reactific and Reaction Speed genuinely track this (the sequence
 // games in this family have no hit/miss concept at all), so this
 // gracefully falls back to a plain message when the data isn't there.
-function renderHitMissDetail(container,hits,misses){
+function renderHitMissDetail(container,hits,misses,avgMs){
   if(hits==null||misses==null){
     container.innerHTML='<div class="tap-log-empty">No hit/miss detail saved for this game.</div>';
     return;
   }
   var total=hits+misses;
   var rate=total>0?Math.round((hits/total)*100):0;
+  var avgLine=avgMs>0?('<div class="tap-log-total">Avg Reaction Time: <b>'+Math.round(avgMs)+' ms</b></div>'):'';
   container.innerHTML=
      '<div class="hitmiss-grid" style="width:100%">'
     +'<div class="hitmiss-cell hits"><div class="hitmiss-val">'+hits+'</div><div class="hitmiss-lbl">Hits</div></div>'
     +'<div class="hitmiss-cell miss"><div class="hitmiss-val">'+misses+'</div><div class="hitmiss-lbl">Misses</div></div>'
     +'</div>'
-    +'<div class="tap-log-total">Hit Rate — This Run: <b>'+rate+'%</b></div>';
+    +'<div class="tap-log-total">Hit Rate — This Run: <b>'+rate+'%</b></div>'
+    +avgLine;
 }
 
 function fetchStandingsFor(gameConfig){
@@ -292,7 +294,14 @@ function fetchStandingsFor(gameConfig){
             :{name:r.player_name,pts:r.score,ms:r.avg_ms,hits:r.hits,misses:r.misses};
         }
       });
-      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.pts-a.pts});
+      // Equal scores are a real possibility now that hits are worth a
+      // flat 100 — average reaction time breaks the tie, faster first.
+      // A player with no recorded average sorts last among ties, never
+      // ahead of someone who genuinely has a real time on the board.
+      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){
+        if(b.pts!==a.pts)return b.pts-a.pts;
+        return (a.ms||Infinity)-(b.ms||Infinity);
+      });
     });
 }
 
@@ -342,7 +351,7 @@ function renderStandingsForGame(gameKey){
         if(gameConfig.rich){
           renderTapLog(tapLogEl,p.shots,p.pts);
         }else{
-          renderHitMissDetail(tapLogEl,p.hits,p.misses);
+          renderHitMissDetail(tapLogEl,p.hits,p.misses,p.ms);
         }
         tapLogEl.style.display='flex';
         row.insertAdjacentElement('afterend',tapLogEl);
@@ -565,12 +574,12 @@ function handleTap(){
   idx++;
   totalRT+=rt;rtCount++;
   if(!bestRT||rt<bestRT)bestRT=rt;
-  score+=Math.max(1,Math.round(300-rt/4));
+  score+=100;
   hitCount++;
 
   $('hScore').textContent=score;
   $('hLeft').textContent=Math.max(0,TOTAL-idx);
-  msg(Math.round(rt)+' MS','go');
+  msg(Math.round(rt)+' MS · +100','go');
 
   if(idx>=TOTAL){
     timers.push(setTimeout(endDrill,400));
