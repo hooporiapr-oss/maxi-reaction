@@ -264,7 +264,12 @@ function renderTapLog(container,shots,finalScore){
 
 function fetchStandingsFor(gameConfig){
   var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms';
-  var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc';
+  // Scoped to the current session's own school — two different
+  // access codes are two genuinely separate boards. A player never
+  // sees, or competes against, scores from a school they didn't
+  // actually enter through.
+  var school=sessionStorage.getItem('reaction-velocity-school')||'';
+  var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc&school_name=eq.'+encodeURIComponent(school);
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
     .then(function(rows){
