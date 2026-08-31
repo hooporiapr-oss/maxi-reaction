@@ -21,7 +21,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .hud-box{text-align:center}
 .hud-label{font-size:.5rem;color:#ff1e3c;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
 .hud-val{font-size:2rem;font-weight:900;line-height:1}
-#hScore{color:#fff;font-size:2.6rem}#hLastMs{color:#ffd35a}#hBest{font-size:1.3rem;color:#9fb3c8}#hLeft{color:#ff1e3c}
+#hScore{color:#fff;font-size:2.6rem}#hHitMiss{color:#ffd35a}#hBest{font-size:1.3rem;color:#9fb3c8}#hLeft{color:#ff1e3c}
 
 #msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:20;font-size:1.6rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;text-align:center;pointer-events:none;text-shadow:0 0 30px currentColor;transition:opacity .3s}
 #msg.watch{color:#ff1e3c}#msg.go{color:#ffd35a}
@@ -117,7 +117,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <div id="hud">
   <div class="hud-box"><div class="hud-label">Left</div><div class="hud-val" id="hLeft">25</div></div>
   <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hScore">0</div></div>
-  <div class="hud-box"><div class="hud-label">Last</div><div class="hud-val" id="hLastMs">--</div></div>
+  <div class="hud-box"><div class="hud-label">Hits/Miss</div><div class="hud-val" id="hHitMiss">0/0</div></div>
   <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val" id="hBest">0</div></div>
 </div>
 
@@ -341,7 +341,7 @@ $('nextPlayerBtn').addEventListener('click',function(){
 function $(id){return document.getElementById(id)}
 
 var phase='idle';
-var idx=0,score=0,best=0,totalRT=0,rtCount=0,bestRT=0,bestAvgMs=0;
+var idx=0,score=0,best=0,totalRT=0,rtCount=0,bestRT=0,bestAvgMs=0,hitCount=0,missCount=0;
 var timers=[],targetEl=$('target'),targetInner=$('target-inner');
 var targetX=0,targetY=0,tapLocked=false,shownAt=0;
 var responseTimer=null;
@@ -455,8 +455,8 @@ function startDrill(){
 }
 
 function runDrill(){
-  phase='running';idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;
-  $('hScore').textContent='0';$('hLastMs').textContent='--';$('hLeft').textContent=TOTAL;
+  phase='running';idx=0;score=0;totalRT=0;rtCount=0;bestRT=0;hitCount=0;missCount=0;
+  $('hScore').textContent='0';$('hHitMiss').textContent='0/0';$('hLeft').textContent=TOTAL;
   msg('GET READY...','go');
   timers.push(setTimeout(function(){msg('','go');nextTarget()},900));
 }
@@ -493,8 +493,9 @@ function handleTimeout(){
   // (150-300) so a couple of misses don't single-handedly sink an
   // otherwise strong run, but it still stings enough to matter.
   score-=100;
+  missCount++;
   $('hScore').textContent=score;
-  $('hLastMs').textContent='--';
+  $('hHitMiss').textContent=hitCount+'/'+missCount;
   $('hLeft').textContent=Math.max(0,TOTAL-idx);
   msg('MISSED — TOO SLOW · -100','watch');
 
@@ -520,9 +521,10 @@ function handleTap(){
   totalRT+=rt;rtCount++;
   if(!bestRT||rt<bestRT)bestRT=rt;
   score+=Math.max(1,Math.round(300-rt/4));
+  hitCount++;
 
   $('hScore').textContent=score;
-  $('hLastMs').textContent=Math.round(rt);
+  $('hHitMiss').textContent=hitCount+'/'+missCount;
   $('hLeft').textContent=Math.max(0,TOTAL-idx);
   msg(Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM','go');
 
