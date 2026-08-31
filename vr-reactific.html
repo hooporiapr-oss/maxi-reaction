@@ -312,7 +312,6 @@ function renderStandingsForGame(gameKey){
       return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
         +'<span class="standings-rank">'+(i+1)+'</span>'
         +'<span class="standings-name">'+safeName+'</span>'
-        +'<span class="standings-bpm">'+(p.ms>0?bpmFromMs(p.ms)+' BPM':'')+'</span>'
         +'<span class="standings-pts">'+p.pts+'</span>'
         +'</div>';
     }).join('');
