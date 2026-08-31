@@ -215,11 +215,11 @@ var BEST_MS_KEY='rct-reaction-speed-best-ms';
 var SB_URL='https://sdaphocueugzfvjovuxd.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
 var SB_TABLE='vr_reaction_speed_standings';
-function recordScoreToStandings(name,finalScore,avgMs){
+function recordScoreToStandings(name,finalScore,avgMs,hits,misses){
   return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
     method:'POST',
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({player_name:name,score:finalScore,avg_ms:avgMs,school_name:sessionStorage.getItem('reaction-velocity-school')||null})
+    body:JSON.stringify({player_name:name,score:finalScore,avg_ms:avgMs,hits:hits,misses:misses,school_name:sessionStorage.getItem('reaction-velocity-school')||null})
   }).catch(function(){});
 }
 
@@ -258,8 +258,27 @@ function renderTapLog(container,shots,finalScore){
   container.innerHTML=chips+'<div class="tap-log-total">Final Total: <b>'+finalScore+' PTS</b></div>';
 }
 
+// This run's hits, misses, and the resulting hit-rate average — only
+// Reactific and Reaction Speed genuinely track this (the sequence
+// games in this family have no hit/miss concept at all), so this
+// gracefully falls back to a plain message when the data isn't there.
+function renderHitMissDetail(container,hits,misses){
+  if(hits==null||misses==null){
+    container.innerHTML='<div class="tap-log-empty">No hit/miss detail saved for this game.</div>';
+    return;
+  }
+  var total=hits+misses;
+  var rate=total>0?Math.round((hits/total)*100):0;
+  container.innerHTML=
+     '<div class="hitmiss-grid" style="width:100%">'
+    +'<div class="hitmiss-cell hits"><div class="hitmiss-val">'+hits+'</div><div class="hitmiss-lbl">Hits</div></div>'
+    +'<div class="hitmiss-cell miss"><div class="hitmiss-val">'+misses+'</div><div class="hitmiss-lbl">Misses</div></div>'
+    +'</div>'
+    +'<div class="tap-log-total">Hit Rate — This Run: <b>'+rate+'%</b></div>';
+}
+
 function fetchStandingsFor(gameConfig){
-  var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms';
+  var cols=gameConfig.rich?'player_name,score,made,attempts,avg_ms,shots':'player_name,score,avg_ms,hits,misses';
   var url=SB_URL+'/rest/v1/'+gameConfig.table+'?select='+cols+'&order=score.desc';
   return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
@@ -270,7 +289,7 @@ function fetchStandingsFor(gameConfig){
         if(!existing||r.score>existing.pts){
           best[r.player_name]=gameConfig.rich
             ?{name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]}
-            :{name:r.player_name,pts:r.score,ms:r.avg_ms};
+            :{name:r.player_name,pts:r.score,ms:r.avg_ms,hits:r.hits,misses:r.misses};
         }
       });
       return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.pts-a.pts});
@@ -311,23 +330,24 @@ function renderStandingsForGame(gameKey){
       return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
         +'<span class="standings-rank">'+(i+1)+'</span>'
         +'<span class="standings-name">'+safeName+'</span>'
-        +'<span class="standings-bpm">'+(p.ms>0?bpmFromMs(p.ms)+' BPM':'')+'</span>'
         +'<span class="standings-pts">'+p.pts+'</span>'
         +'</div>';
     }).join('');
-    if(gameConfig.rich){
-      listEl.querySelectorAll('.standings-row').forEach(function(row){
-        row.addEventListener('click',function(){
-          var name=row.dataset.name;
-          if(openRowName===name){tapLogEl.style.display='none';openRowName=null;return}
-          openRowName=name;
-          var p=ranked.filter(function(r){return r.name===name})[0];
+    listEl.querySelectorAll('.standings-row').forEach(function(row){
+      row.addEventListener('click',function(){
+        var name=row.dataset.name;
+        if(openRowName===name){tapLogEl.style.display='none';openRowName=null;return}
+        openRowName=name;
+        var p=ranked.filter(function(r){return r.name===name})[0];
+        if(gameConfig.rich){
           renderTapLog(tapLogEl,p.shots,p.pts);
-          tapLogEl.style.display='flex';
-          row.insertAdjacentElement('afterend',tapLogEl);
-        });
+        }else{
+          renderHitMissDetail(tapLogEl,p.hits,p.misses);
+        }
+        tapLogEl.style.display='flex';
+        row.insertAdjacentElement('afterend',tapLogEl);
       });
-    }
+    });
   }).catch(function(){
     if(currentStandingsGame!==gameKey)return;
     listEl.innerHTML='<div class="box-empty">Couldn\'t reach the standings — check the connection. <span class="standings-retry-btn" style="color:#ff1e3c;text-decoration:underline;cursor:pointer">Try again</span></div>';
@@ -570,7 +590,7 @@ function endDrill(){
   var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
   if(isNewPts){best=finalScore;saveBest()}
   if(isNewMs){bestAvgMs=avgRT;saveBestMs()}
-  recordScoreToStandings(currentPlayerName,finalScore,avgRT);
+  recordScoreToStandings(currentPlayerName,finalScore,avgRT,hitCount,missCount);
 
   $('endNum').textContent=finalScore;
   $('endHits').textContent=hitCount;
